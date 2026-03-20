@@ -1,0 +1,66 @@
+{
+  "metadata": {
+    "last_updated": "2026-03-15T06:00:00Z",
+    "source": "Municipal Corporation APIs (mock — dev only)",
+    "update_frequency_hours": 1,
+    "schema_version": "1.0"
+  },
+  "restrictions": [
+    {
+      "id": "res_mumbai_south_001",
+      "zone": "South Mumbai",
+      "city": "Mumbai",
+      "type": "LocalRestriction",
+      "active": true,
+      "severity": "high",
+      "reason": "Anti-pollution emergency drive — heavy commercial vehicle ban (BMC Order No. MCM/ENV/2026/032)",
+      "start_time": "2026-03-15T04:00:00Z",
+      "end_time": "2026-03-15T20:00:00Z",
+      "affected_area_km2": 12.5,
+      "estimated_impact_workers": 340,
+      "source": "BMC Mumbai Official Feed"
+    },
+    {
+      "id": "res_delhi_central_002",
+      "zone": "Central Delhi",
+      "city": "Delhi",
+      "type": "LocalRestriction",
+      "active": false,
+      "severity": "medium",
+      "reason": "Odd-even vehicle scheme in effect — expires midnight",
+      "start_time": "2026-03-14T00:00:00Z",
+      "end_time": "2026-03-15T00:00:00Z",
+      "affected_area_km2": 18.2,
+      "estimated_impact_workers": 520,
+      "source": "Delhi Traffic Police Official"
+    },
+    {
+      "id": "res_bengaluru_koramangala_003",
+      "zone": "Koramangala",
+      "city": "Bengaluru",
+      "type": "LocalRestriction",
+      "active": false,
+      "severity": "low",
+      "reason": "Road closure for water pipeline work — alternate routes available",
+      "start_time": "2026-03-15T09:00:00Z",
+      "end_time": "2026-03-15T14:00:00Z",
+      "affected_area_km2": 2.1,
+      "estimated_impact_workers": 85,
+      "source": "BBMP Infrastructure Notice"
+    },
+    {
+      "id": "res_hyderabad_hitech_004",
+      "zone": "Hitech City",
+      "city": "Hyderabad",
+      "type": "LocalRestriction",
+      "active": false,
+      "severity": "low",
+      "reason": "IT corridor traffic management — no curfew, advisory only",
+      "start_time": null,
+      "end_time": null,
+      "affected_area_km2": 0,
+      "estimated_impact_workers": 0,
+      "source": "GHMC Advisory"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "_meta": {
+    "description": "7-day weather forecast mock data for 5 Indian metro cities. Used as premium pricing fallback when forecast API and Redis cache are both unavailable.",
+    "fields": "max_temp_celsius, rainfall_probability (0–1), aqi_forecast, disruption_risk_score (0–1)",
+    "last_updated": "2026-03-16"
+  },
+  "cities": {
+    "Mumbai": {
+      "location_risk_index": 0.72,
+      "source": "MOCK_FORECAST",
+      "forecast": [
+        { "day": 0, "max_temp_celsius": 31.2, "rainfall_probability": 0.78, "aqi_forecast": 140, "disruption_risk_score": 0.72 },
+        { "day": 1, "max_temp_celsius": 30.5, "rainfall_probability": 0.85, "aqi_forecast": 135, "disruption_risk_score": 0.75 },
+        { "day": 2, "max_temp_celsius": 29.8, "rainfall_probability": 0.91, "aqi_forecast": 128, "disruption_risk_score": 0.80 },
+        { "day": 3, "max_temp_celsius": 31.0, "rainfall_probability": 0.70, "aqi_forecast": 142, "disruption_risk_score": 0.68 },
+        { "day": 4, "max_temp_celsius": 32.1, "rainfall_probability": 0.55, "aqi_forecast": 148, "disruption_risk_score": 0.60 },
+        { "day": 5, "max_temp_celsius": 32.8, "rainfall_probability": 0.40, "aqi_forecast": 155, "disruption_risk_score": 0.52 },
+        { "day": 6, "max_temp_celsius": 33.5, "rainfall_probability": 0.32, "aqi_forecast": 150, "disruption_risk_score": 0.48 }
+      ]
+    },
+    "Delhi": {
+      "location_risk_index": 0.76,
+      "source": "MOCK_FORECAST",
+      "forecast": [
+        { "day": 0, "max_temp_celsius": 44.2, "rainfall_probability": 0.05, "aqi_forecast": 322, "disruption_risk_score": 0.80 },
+        { "day": 1, "max_temp_celsius": 43.8, "rainfall_probability": 0.08, "aqi_forecast": 315, "disruption_risk_score": 0.79 },
+        { "day": 2, "max_temp_celsius": 42.5, "rainfall_probability": 0.12, "aqi_forecast": 295, "disruption_risk_score": 0.75 },
+        { "day": 3, "max_temp_celsius": 41.0, "rainfall_probability": 0.20, "aqi_forecast": 280, "disruption_risk_score": 0.70 },
+        { "day": 4, "max_temp_celsius": 40.5, "rainfall_probability": 0.25, "aqi_forecast": 265, "disruption_risk_score": 0.67 },
+        { "day": 5, "max_temp_celsius": 39.8, "rainfall_probability": 0.30, "aqi_forecast": 250, "disruption_risk_score": 0.63 },
+        { "day": 6, "max_temp_celsius": 38.5, "rainfall_probability": 0.35, "aqi_forecast": 240, "disruption_risk_score": 0.60 }
+      ]
+    },
+    "Bengaluru": {
+      "location_risk_index": 0.60,
+      "source": "MOCK_FORECAST",
+      "forecast": [
+        { "day": 0, "max_temp_celsius": 29.5, "rainfall_probability": 0.42, "aqi_forecast": 80, "disruption_risk_score": 0.45 },
+        { "day": 1, "max_temp_celsius": 28.8, "rainfall_probability": 0.50, "aqi_forecast": 78, "disruption_risk_score": 0.48 },
+        { "day": 2, "max_temp_celsius": 28.2, "rainfall_probability": 0.58, "aqi_forecast": 75, "disruption_risk_score": 0.52 },
+        { "day": 3, "max_temp_celsius": 29.0, "rainfall_probability": 0.45, "aqi_forecast": 82, "disruption_risk_score": 0.46 },
+        { "day": 4, "max_temp_celsius": 29.8, "rainfall_probability": 0.38, "aqi_forecast": 85, "disruption_risk_score": 0.42 },
+        { "day": 5, "max_temp_celsius": 30.5, "rainfall_probability": 0.30, "aqi_forecast": 88, "disruption_risk_score": 0.38 },
+        { "day": 6, "max_temp_celsius": 31.0, "rainfall_probability": 0.25, "aqi_forecast": 90, "disruption_risk_score": 0.35 }
+      ]
+    },
+    "Hyderabad": {
+      "location_risk_index": 0.56,
+      "source": "MOCK_FORECAST",
+      "forecast": [
+        { "day": 0, "max_temp_celsius": 39.5, "rainfall_probability": 0.15, "aqi_forecast": 162, "disruption_risk_score": 0.58 },
+        { "day": 1, "max_temp_celsius": 38.8, "rainfall_probability": 0.18, "aqi_forecast": 158, "disruption_risk_score": 0.56 },
+        { "day": 2, "max_temp_celsius": 38.2, "rainfall_probability": 0.22, "aqi_forecast": 152, "disruption_risk_score": 0.54 },
+        { "day": 3, "max_temp_celsius": 37.5, "rainfall_probability": 0.28, "aqi_forecast": 148, "disruption_risk_score": 0.52 },
+        { "day": 4, "max_temp_celsius": 37.0, "rainfall_probability": 0.32, "aqi_forecast": 144, "disruption_risk_score": 0.50 },
+        { "day": 5, "max_temp_celsius": 36.5, "rainfall_probability": 0.38, "aqi_forecast": 140, "disruption_risk_score": 0.48 },
+        { "day": 6, "max_temp_celsius": 36.0, "rainfall_probability": 0.42, "aqi_forecast": 136, "disruption_risk_score": 0.45 }
+      ]
+    },
+    "Chennai": {
+      "location_risk_index": 0.58,
+      "source": "MOCK_FORECAST",
+      "forecast": [
+        { "day": 0, "max_temp_celsius": 36.2, "rainfall_probability": 0.30, "aqi_forecast": 115, "disruption_risk_score": 0.55 },
+        { "day": 1, "max_temp_celsius": 35.8, "rainfall_probability": 0.35, "aqi_forecast": 112, "disruption_risk_score": 0.53 },
+        { "day": 2, "max_temp_celsius": 35.5, "rainfall_probability": 0.40, "aqi_forecast": 108, "disruption_risk_score": 0.52 },
+        { "day": 3, "max_temp_celsius": 35.2, "rainfall_probability": 0.45, "aqi_forecast": 105, "disruption_risk_score": 0.51 },
+        { "day": 4, "max_temp_celsius": 35.8, "rainfall_probability": 0.38, "aqi_forecast": 110, "disruption_risk_score": 0.52 },
+        { "day": 5, "max_temp_celsius": 36.5, "rainfall_probability": 0.30, "aqi_forecast": 118, "disruption_risk_score": 0.54 },
+        { "day": 6, "max_temp_celsius": 37.0, "rainfall_probability": 0.22, "aqi_forecast": 122, "disruption_risk_score": 0.55 }
+      ]
+    }
+  }
+}

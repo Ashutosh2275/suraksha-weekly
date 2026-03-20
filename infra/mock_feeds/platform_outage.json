@@ -1,0 +1,34 @@
+{
+  "metadata": {
+    "last_updated": "2026-03-15T09:45:00Z",
+    "source": "Platform monitoring heartbeat + status page scrape (mock — dev only)",
+    "update_frequency_minutes": 5,
+    "schema_version": "1.0"
+  },
+  "platforms": [
+    {
+      "platform": "Zomato",
+      "status": "degraded",
+      "affected_cities": ["Delhi", "Noida", "Gurugram"],
+      "outage_started_at": "2026-03-15T08:42:00Z",
+      "outage_duration_minutes": 75,
+      "incident_id": "ZOM-INC-2026-0315-001",
+      "incident_type": "API_TIMEOUT",
+      "description": "Order assignment API experiencing elevated latency and timeouts. Engineers investigating.",
+      "heartbeat_failures": 9,
+      "source": "Zomato Internal Monitor + ops-alerts channel"
+    },
+    {
+      "platform": "Swiggy",
+      "status": "operational",
+      "affected_cities": [],
+      "outage_started_at": null,
+      "outage_duration_minutes": 0,
+      "incident_id": null,
+      "incident_type": null,
+      "description": "All systems operational. P99 latency within SLA.",
+      "heartbeat_failures": 0,
+      "source": "Swiggy Ops Dashboard"
+    }
+  ]
+}

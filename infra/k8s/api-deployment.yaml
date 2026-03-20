@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: suraksha-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: suraksha-api
+  template:
+    metadata:
+      labels:
+        app: suraksha-api
+    spec:
+      containers:
+        - name: api
+          image: suraksha-api:latest
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /internal/ready
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /internal/live
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          startupProbe:
+            httpGet:
+              path: /internal/startup
+              port: 8080
+            failureThreshold: 12
+            periodSeconds: 5

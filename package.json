@@ -1,0 +1,35 @@
+{
+  "name": "suraksha-weekly",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AI Parametric Income Shield for Gig Delivery Partners - Guidewire DEVTrails 2026",
+  "workspaces": [
+    "apps/web",
+    "apps/admin"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm install --workspaces",
+    "dev": "concurrently \"npm run dev -w apps/web\" \"npm run dev -w apps/admin\"",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:admin": "npm run dev -w apps/admin",
+    "build": "npm run build -w apps/web && npm run build -w apps/admin",
+    "build:web": "npm run build -w apps/web",
+    "build:admin": "npm run build -w apps/admin",
+    "lint": "npm run lint -w apps/web && npm run lint -w apps/admin",
+    "type-check": "npm run type-check -w apps/web && npm run type-check -w apps/admin",
+    "docker:build": "docker compose -f infra/docker-compose.yml build",
+    "docker:up": "docker compose -f infra/docker-compose.yml up",
+    "docker:down": "docker compose -f infra/docker-compose.yml down",
+    "docker:logs": "docker compose -f infra/docker-compose.yml logs -f",
+    "load:setup": "k6 run tests/load/setup.js --env BASE_URL=http://localhost:8000",
+    "load:baseline": "k6 run tests/load/scenario_1_baseline.js --env BASE_URL=http://localhost:8000",
+    "load:peak": "k6 run tests/load/scenario_2_disruption_peak.js --env BASE_URL=http://localhost:8000",
+    "load:stress": "k6 run tests/load/scenario_3_stress_breakpoint.js --env BASE_URL=http://localhost:8000",
+    "load:fraud": "k6 run tests/load/scenario_4_fraud_abuse.js --env BASE_URL=http://localhost:8000",
+    "load:all": "npm run load:baseline && npm run load:peak && npm run load:fraud",
+    "load:ci": "npm run load:baseline && npm run load:fraud"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

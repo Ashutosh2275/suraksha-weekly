@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Suraksha Admin Console</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section id="admin-auth" class="auth-shell">
+      <div class="auth-card auth-card-wide">
+        <div class="auth-header">
+          <p class="auth-kicker">Suraksha Weekly</p>
+          <span class="auth-badge">Admin access</span>
+        </div>
+        <h1>Operations, review, and governance in one calm workspace</h1>
+        <p class="auth-copy">Sign in to see the live queue, reconcile payouts, investigate fraud, and move across critical controls without jumping between disconnected screens.</p>
+        <form id="admin-auth-form" class="auth-form">
+          <label>
+            Work Email
+            <input name="email" type="email" placeholder="ops@suraksha.dev" required />
+          </label>
+          <label>
+            Password
+            <input name="password" type="password" placeholder="Admin@123" required />
+          </label>
+          <button type="submit">Sign in</button>
+          <p id="admin-auth-error" class="auth-error"></p>
+        </form>
+        <div class="auth-footer">
+          <p class="auth-hint">Demo credentials: ops@suraksha.dev / Admin@123</p>
+          <div class="auth-mini-grid">
+            <article>
+              <strong>Priority-first view</strong>
+              <span>Backlogs, duplicate risk, and reconciliation are surfaced first.</span>
+            </article>
+            <article>
+              <strong>Focused workspaces</strong>
+              <span>Each task area has a clear job instead of a generic tool page.</span>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="admin-app" class="admin-shell hidden">
+      <aside class="sidebar">
+        <div class="sidebar-brand-block">
+          <p class="brand-kicker">Suraksha Weekly</p>
+          <h1>Admin Console</h1>
+          <p id="admin-auth-user" class="auth-chip"></p>
+        </div>
+
+        <section class="sidebar-focus">
+          <span class="sidebar-label">Operations focus</span>
+          <strong id="admin-focus-status">Review incoming risk and payout signals.</strong>
+          <p id="admin-focus-summary" class="sidebar-copy">Overview keeps the queue, reconciliation, and audit readiness visible without hunting through tabs.</p>
+        </section>
+
+        <nav class="layer-nav sidebar-nav" aria-label="Admin sections">
+          <button class="layer-tab active" type="button" data-layer="overview">Command center</button>
+          <button class="layer-tab" type="button" data-layer="reviews">Claims desk</button>
+          <button class="layer-tab" type="button" data-layer="underwriting">Underwriting</button>
+          <button class="layer-tab" type="button" data-layer="pricing">Pricing</button>
+          <button class="layer-tab" type="button" data-layer="fraud">Fraud ops</button>
+          <button class="layer-tab" type="button" data-layer="portfolio">Portfolio</button>
+          <button class="layer-tab" type="button" data-layer="compliance">Compliance</button>
+          <button class="layer-tab" type="button" data-layer="operations">Operations</button>
+          <button class="layer-tab" type="button" data-layer="audit">Audit</button>
+        </nav>
+
+        <div class="sidebar-quick-actions">
+          <span class="sidebar-label">Quick jumps</span>
+          <button type="button" class="quick-link" data-jump="reviews">Open claims desk</button>
+          <button type="button" class="quick-link" data-jump="operations">Check jobs</button>
+          <button type="button" class="quick-link" data-jump="audit">Open audit trail</button>
+        </div>
+
+        <button id="admin-logout" class="secondary">Logout</button>
+      </aside>
+
+      <main class="admin-main">
+        <header class="topbar topbar-rich">
+          <div>
+            <p id="admin-section-kicker" class="topbar-kicker">Admin workspace</p>
+            <h2 id="admin-section-title">Command center</h2>
+            <p id="admin-section-summary">The most urgent queue, risk, and payout signals stay visible first.</p>
+          </div>
+          <div class="topbar-actions">
+            <label class="command-search">
+              <span>Jump to a task</span>
+              <input id="admin-command-search" type="search" placeholder="Try: claims, fraud, audit, pricing" />
+            </label>
+            <div class="status-pill-row">
+              <span class="status-chip">Role: admin</span>
+              <span class="status-chip status-chip-soft">Live operations view</span>
+              <a class="portal-link" href="/worker">Open worker portal</a>
+            </div>
+          </div>
+        </header>
+
+        <section class="panel hero-command admin-layer" data-layer-page="overview">
+          <div class="hero-panel hero-panel-admin">
+            <div class="hero-copy-block">
+              <p class="section-kicker">Control room</p>
+              <h2 id="admin-priority-heading">Start with the claims desk and duplicate leakage watchlist.</h2>
+              <p id="admin-priority-summary" class="hero-copy">The command center surfaces the work that can hurt payout quality or operational readiness first.</p>
+              <div class="hero-action-row">
+                <button id="refresh-all" type="button">Refresh live data</button>
+                <button type="button" class="ghost" data-jump="reviews">Go to claims desk</button>
+                <button type="button" class="ghost" data-jump="operations">View jobs</button>
+              </div>
+            </div>
+            <div class="hero-checklist">
+              <article>
+                <span>Watch</span>
+                <strong>Claims backlog</strong>
+                <p>See what needs review before it becomes payout delay.</p>
+              </article>
+              <article>
+                <span>Protect</span>
+                <strong>Reconciliation health</strong>
+                <p>Keep payout success, failures, and duplicates visible.</p>
+              </article>
+              <article>
+                <span>Prove</span>
+                <strong>Audit readiness</strong>
+                <p>Move from operations to audit evidence without context switching.</p>
+              </article>
+            </div>
+          </div>
+
+          <section class="admin-hero">
+            <article class="hero-card">
+              <span>Workers</span>
+              <strong id="workers-count">0</strong>
+            </article>
+            <article class="hero-card">
+              <span>Policies</span>
+              <strong id="policies-count">0</strong>
+            </article>
+            <article class="hero-card">
+              <span>Claims In Review</span>
+              <strong id="review-count">0</strong>
+            </article>
+            <article class="hero-card accent">
+              <span>Duplicate Leakage</span>
+              <strong id="duplicate-count">0</strong>
+            </article>
+          </section>
+
+          <section class="grid dashboard-grid-3">
+            <article class="panel nested-panel">
+              <div class="panel-heading">
+                <h2>Risk overview</h2>
+                <p>Claims, payout health, and trust mix.</p>
+              </div>
+              <div id="metrics-grid" class="mini-grid"></div>
+            </article>
+            <article class="panel nested-panel">
+              <div class="panel-heading">
+                <h2>Reconciliation</h2>
+                <p>Immediate view of payout integrity.</p>
+              </div>
+              <div id="reconciliation-card" class="metric-stack"></div>
+            </article>
+            <article class="panel nested-panel">
+              <div class="panel-heading">
+                <h2>Priority watchlist</h2>
+                <p>What to look at first before switching into deeper workspaces.</p>
+              </div>
+              <div id="admin-priority-list" class="scroll-list"></div>
+            </article>
+          </section>
+
+          <section class="grid two-up">
+            <article class="panel nested-panel">
+              <div class="panel-heading">
+                <h2>System snapshot</h2>
+                <p>Jobs, support, and payout pressure indicators.</p>
+              </div>
+              <div id="admin-system-status" class="scroll-list"></div>
+            </article>
+            <article class="panel nested-panel">
+              <div class="panel-heading">
+                <h2>Recent audit signals</h2>
+                <p>Fast path into evidence for recent changes.</p>
+              </div>
+              <div id="audit-list" class="scroll-list wide"></div>
+            </article>
+          </section>
+        </section>
+
+        <section class="grid admin-layer hidden" data-layer-page="reviews">
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Claims desk</h2>
+              <p>Queue, decision trace, and approve or reject actions in one workspace.</p>
+            </div>
+            <div id="review-list" class="scroll-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Decision notes</h2>
+              <p>Capture manual rationale while you review the queue.</p>
+            </div>
+            <form id="decision-form" class="stack-form">
+              <label>Claim ID<input name="claimId" placeholder="Paste claim ID" required /></label>
+              <label>Decision<select name="decision"><option value="approve">Approve</option><option value="reject">Reject</option><option value="hold">Hold</option></select></label>
+              <label>Reason<textarea name="reason" rows="4" required></textarea></label>
+              <button type="submit">Save decision note</button>
+            </form>
+            <div id="decision-notes" class="scroll-list"></div>
+          </article>
+        </section>
+
+        <section class="grid two-up admin-layer hidden" data-layer-page="underwriting">
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Underwriting workbench</h2>
+              <p>Run rule-level evaluation and see a clear manual override recommendation.</p>
+            </div>
+            <form id="underwriting-form" class="stack-form">
+              <label>Trust Score<input name="trustScore" type="number" min="0" max="1000" value="720" required /></label>
+              <label>Account Age (days)<input name="accountAge" type="number" min="0" value="120" required /></label>
+              <label>Active Hours 14d<input name="activeHours" type="number" min="0" value="80" required /></label>
+              <label>Location Consistency<input name="locationConsistency" type="number" min="0" max="1" step="0.01" value="0.9" required /></label>
+              <label>KYC<select name="kyc"><option value="verified">Verified</option><option value="pending">Pending</option></select></label>
+              <label>Anomaly Flag<select name="anomaly"><option value="no">No</option><option value="yes">Yes</option></select></label>
+              <button type="submit">Evaluate applicant</button>
+            </form>
+          </article>
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Underwriting result</h2>
+              <p>Decision trace and override recommendation.</p>
+            </div>
+            <div id="underwriting-output" class="scroll-list"></div>
+          </article>
+        </section>
+
+        <section class="grid two-up admin-layer hidden" data-layer-page="pricing">
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Pricing control center</h2>
+              <p>Simulate premium outcomes before publishing pricing changes.</p>
+            </div>
+            <form id="pricing-form" class="stack-form">
+              <label>Base Rate<input name="baseRate" type="number" value="54" min="1" required /></label>
+              <label>Zone Risk<select name="zoneRisk"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
+              <label>Add-on Count<input name="addons" type="number" value="1" min="0" max="5" required /></label>
+              <label>Waiting Period (days)<input name="waitingDays" type="number" value="1" min="0" max="7" required /></label>
+              <label>Deductible<select name="deductible"><option value="none">None</option><option value="low" selected>Low</option><option value="high">High</option></select></label>
+              <button type="submit">Simulate pricing</button>
+            </form>
+          </article>
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Scenario preview</h2>
+              <p>A/B recommendation and plan-level premium projection.</p>
+            </div>
+            <div id="pricing-output" class="scroll-list"></div>
+          </article>
+        </section>
+
+        <section class="grid two-up admin-layer hidden" data-layer-page="fraud">
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Fraud threshold manager</h2>
+              <p>Tune fraud bands and test sample decisions.</p>
+            </div>
+            <form id="fraud-form" class="stack-form">
+              <label>Medium Threshold<input name="medium" type="number" min="0" max="100" value="35" required /></label>
+              <label>High Threshold<input name="high" type="number" min="0" max="100" value="60" required /></label>
+              <label>Critical Threshold<input name="critical" type="number" min="0" max="100" value="85" required /></label>
+              <label>Sample Claim Risk Score<input name="sampleRisk" type="number" min="0" max="100" value="48" required /></label>
+              <button type="submit">Evaluate fraud lane</button>
+            </form>
+          </article>
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Fraud evaluation</h2>
+              <p>Decision lane with false-positive risk hint.</p>
+            </div>
+            <div id="fraud-output" class="scroll-list"></div>
+          </article>
+        </section>
+
+        <section class="grid two-up admin-layer hidden" data-layer-page="portfolio">
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Portfolio analytics</h2>
+              <p>Filter by city, platform, and plan to inspect health trends.</p>
+            </div>
+            <form id="portfolio-form" class="stack-form">
+              <label>City<input name="city" value="Bengaluru" required /></label>
+              <label>Platform<input name="platform" value="Zepto" required /></label>
+              <label>Plan<select name="plan"><option value="basic">Basic</option><option value="standard" selected>Standard</option><option value="pro">Pro</option></select></label>
+              <label>Retention Target (%)<input name="retention" type="number" value="88" min="0" max="100" required /></label>
+              <button type="submit">Generate portfolio view</button>
+            </form>
+          </article>
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Portfolio output</h2>
+              <p>Cohort and unit economics summary.</p>
+            </div>
+            <div id="portfolio-output" class="scroll-list"></div>
+          </article>
+        </section>
+
+        <section class="grid two-up admin-layer hidden" data-layer-page="compliance">
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Compliance checklist</h2>
+              <p>Capture consent, KYC, and audit gate approvals.</p>
+            </div>
+            <form id="compliance-form" class="stack-form">
+              <label class="checkline"><input name="consent" type="checkbox" checked />Worker consent captured</label>
+              <label class="checkline"><input name="kyc" type="checkbox" checked />KYC verification complete</label>
+              <label class="checkline"><input name="dualApproval" type="checkbox" />4-eyes approval completed</label>
+              <label class="checkline"><input name="reportExport" type="checkbox" />Regulatory report exported</label>
+              <button type="submit">Save compliance snapshot</button>
+            </form>
+          </article>
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Compliance status</h2>
+              <p>Current pass or fail status and next required action.</p>
+            </div>
+            <div id="compliance-output" class="scroll-list"></div>
+          </article>
+        </section>
+
+        <section class="grid two-up admin-layer hidden" data-layer-page="operations">
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Recent jobs</h2>
+              <p>Queue insight for trigger ingestion and reviews.</p>
+            </div>
+            <div id="jobs-list" class="scroll-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Runbook snapshot</h2>
+              <p>Operational checkpoints for reliability and release health.</p>
+            </div>
+            <div class="scroll-list">
+              <article class="list-item">
+                <h3>Daily</h3>
+                <p>Validate health probes, failed payout count, and duplicate detection.</p>
+              </article>
+              <article class="list-item">
+                <h3>Weekly</h3>
+                <p>Review trust mix, manual review backlog, and reconciliation drift.</p>
+              </article>
+              <article class="list-item">
+                <h3>Release</h3>
+                <p>Run CI, load smoke tests, rollback checks, and backup verification.</p>
+              </article>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel admin-layer hidden" data-layer-page="audit">
+          <div class="panel-heading">
+            <h2>Audit trail</h2>
+            <p>Latest immutable records from repository audit logging.</p>
+          </div>
+          <div id="audit-list-secondary" class="scroll-list wide"></div>
+        </section>
+      </main>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>

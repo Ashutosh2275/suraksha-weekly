@@ -1,0 +1,75 @@
+{
+  "_meta": {
+    "description": "Mock active trigger events for demo and offline fallback. triggered_at_offset_minutes is subtracted from current UTC time at read-time.",
+    "last_updated": "2026-03-16"
+  },
+  "events": [
+    {
+      "id": "mock-trigger-001-heavyrain-mumbai",
+      "type": "HeavyRain",
+      "zone": "Mumbai Zone 3",
+      "value": 42.0,
+      "threshold": 5.0,
+      "confidence_score": 0.91,
+      "sources": ["OpenWeatherMap_MOCK", "IMD_Station_MOCK"],
+      "status": "active",
+      "triggered_at_offset_minutes": 15,
+      "audit_snapshot": {
+        "city": "Mumbai",
+        "zone": "Mumbai Zone 3",
+        "trigger_type": "HeavyRain",
+        "measured_value": 42.0,
+        "threshold": 5.0,
+        "confidence_score": 0.91,
+        "sources": ["OpenWeatherMap_MOCK", "IMD_Station_MOCK"],
+        "payout_multiplier": 0.80,
+        "mock_mode": true
+      }
+    },
+    {
+      "id": "mock-trigger-002-pollution-delhi",
+      "type": "SeverePollution",
+      "zone": "Delhi Zone 1",
+      "value": 318.0,
+      "threshold": 300.0,
+      "confidence_score": 0.87,
+      "sources": ["OpenAQ_MOCK", "SAFAR_MOCK"],
+      "status": "active",
+      "triggered_at_offset_minutes": 15,
+      "audit_snapshot": {
+        "city": "Delhi",
+        "zone": "Delhi Zone 1",
+        "trigger_type": "SeverePollution",
+        "measured_value": 318.0,
+        "threshold": 300.0,
+        "confidence_score": 0.87,
+        "sources": ["OpenAQ_MOCK", "SAFAR_MOCK"],
+        "payout_multiplier": 0.75,
+        "mock_mode": true
+      }
+    },
+    {
+      "id": "mock-trigger-003-restriction-bengaluru",
+      "type": "LocalRestriction",
+      "zone": "Bengaluru Zone 2",
+      "value": 1.0,
+      "threshold": 1.0,
+      "confidence_score": 0.95,
+      "sources": ["GovernmentFeed_MOCK"],
+      "status": "active",
+      "triggered_at_offset_minutes": 15,
+      "audit_snapshot": {
+        "city": "Bengaluru",
+        "zone": "Bengaluru Zone 2",
+        "trigger_type": "LocalRestriction",
+        "measured_value": 1.0,
+        "threshold": 1.0,
+        "confidence_score": 0.95,
+        "sources": ["GovernmentFeed_MOCK"],
+        "restriction_reason": "Curfew active — civic unrest (mock data)",
+        "payout_multiplier": 1.00,
+        "mock_mode": true
+      }
+    }
+  ]
+}

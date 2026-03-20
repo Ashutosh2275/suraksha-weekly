@@ -1,0 +1,107 @@
+# ============================================================
+# SURAKSHA WEEKLY — PRODUCTION .gitignore
+# ============================================================
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+nosetests.xml
+pytest.xml
+
+# ── ML Models ────────────────────────────────────────────────
+services/api/ml/models/*.pkl
+services/api/ml/models/*.joblib
+*.pkl
+*.joblib
+
+# ── Node / Next.js ───────────────────────────────────────────
+node_modules/
+.next/
+out/
+.nuxt/
+.cache/
+.npm/
+.yarn/
+.pnp.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Environment Files (CRITICAL) ─────────────────────────────
+.env
+.env.*
+!.env.example
+!.env.demo
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+
+# ── Docker ───────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ── OS Files ─────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── IDE / Editor ─────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ── Test Results ─────────────────────────────────────────────
+tests/load/results/*.json
+tests/load/results/*.html
+*.xml
+
+# ── Temporary Files ──────────────────────────────────────────
+*.tmp
+*.temp
+*.bak
+*.orig
+
+# ── Competition / Internal Docs ──────────────────────────────
+DEVTrails_2026_Rulebook.pdf
+DEVTrails_2026_Usecase_Document.pdf
+Suraksha_Weekly_DEVTrails2026.pptx
+extracted_content.txt
+structure.txt
+
+PHASE1_SUBMISSION_STATUS.md
+PHASE2_CHECKLIST.md
+PHASE2_COMPLETE.md
+PHASE2_VERIFICATION.md
+DEMO_CHECKLIST_PHASE1.md

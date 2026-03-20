@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Suraksha Weekly Worker Portal</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section id="worker-auth" class="auth-shell">
+      <div class="auth-card auth-card-wide">
+        <div class="auth-header">
+          <p class="auth-kicker">Suraksha Weekly</p>
+          <span class="auth-badge">Worker access</span>
+        </div>
+        <h1>One clear place for coverage, claims, and support</h1>
+        <p class="auth-copy">Sign in once to see what to do next, what is protected, and what needs attention right now.</p>
+        <form id="worker-auth-form" class="auth-form">
+          <label>
+            Phone Number
+            <input name="phone" placeholder="9999999999" required />
+          </label>
+          <label>
+            OTP
+            <input name="pin" type="password" placeholder="1234" maxlength="4" required />
+          </label>
+          <button type="submit">Sign in with OTP</button>
+          <p id="worker-auth-error" class="auth-error"></p>
+        </form>
+        <div class="auth-footer">
+          <p class="auth-hint">Demo OTP flow: enter phone 9999999999 and code 1234</p>
+          <div class="auth-mini-grid">
+            <article>
+              <strong>Guided flow</strong>
+              <span>Onboarding, quote, claim, and support in one journey.</span>
+            </article>
+            <article>
+              <strong>Plain-language status</strong>
+              <span>See readiness, payout state, and next best action at a glance.</span>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="worker-app" class="page-shell hidden">
+      <div class="app-layout">
+        <aside class="app-sidebar">
+          <div class="sidebar-brand">
+            <p class="eyebrow dark">Suraksha Weekly</p>
+            <h2>Worker Console</h2>
+            <p id="worker-auth-user" class="user-line"></p>
+          </div>
+
+          <section class="sidebar-focus">
+            <span class="sidebar-label">Current focus</span>
+            <strong id="worker-journey-status">Sign in to begin your protection journey.</strong>
+            <p id="worker-helper-summary" class="sidebar-copy">The dashboard will guide you to the next action after every step.</p>
+          </section>
+
+          <nav class="layer-nav sidebar-nav" aria-label="Worker sections">
+            <button class="layer-tab active" type="button" data-layer="overview">Home</button>
+            <button class="layer-tab" type="button" data-layer="onboarding">Set up profile</button>
+            <button class="layer-tab" type="button" data-layer="protection">Get cover</button>
+            <button class="layer-tab" type="button" data-layer="claims">Claims</button>
+            <button class="layer-tab" type="button" data-layer="policy">Policy</button>
+            <button class="layer-tab" type="button" data-layer="support">Support</button>
+            <button class="layer-tab" type="button" data-layer="insights">Learn</button>
+          </nav>
+
+          <div class="sidebar-quick-actions">
+            <span class="sidebar-label">Quick jumps</span>
+            <button type="button" class="quick-link" data-jump="onboarding">Complete profile</button>
+            <button type="button" class="quick-link" data-jump="protection">Run premium lab</button>
+            <button type="button" class="quick-link" data-jump="claims">Check claims</button>
+          </div>
+
+          <button id="worker-logout" class="sidebar-logout" type="button">Logout</button>
+        </aside>
+
+        <div class="app-content">
+          <header class="topbar topbar-rich">
+            <div>
+              <p id="worker-section-kicker" class="topbar-kicker">Worker workspace</p>
+              <h1 id="worker-section-title">Home</h1>
+              <p id="worker-section-summary">Your dashboard keeps the next action, current cover, and payout state in one place.</p>
+            </div>
+            <div class="topbar-actions">
+              <label class="command-search">
+                <span>Jump to a task</span>
+                <input id="worker-command-search" type="search" placeholder="Try: onboarding, quote, claim, support" />
+              </label>
+              <div class="status-pill-row">
+                <span class="status-chip">Role: worker</span>
+                <span class="status-chip status-chip-soft">Live API connected</span>
+                <a class="portal-link" href="/admin">Open admin console</a>
+              </div>
+            </div>
+          </header>
+
+          <main class="workspace">
+            <section class="panel panel-hero worker-layer" data-layer-page="overview">
+              <div class="hero-panel">
+                <div class="hero-copy-block">
+                  <p class="section-kicker">Your protection journey</p>
+                  <h2 id="worker-next-action">Start by saving your onboarding profile.</h2>
+                  <p id="worker-readiness-summary" class="hero-copy">Once your profile is saved, the console will guide you through quote generation, policy purchase, and claim readiness.</p>
+                  <div class="hero-action-row">
+                    <button type="button" data-jump="onboarding">Complete profile</button>
+                    <button type="button" class="ghost" data-jump="protection">Get cover</button>
+                    <button type="button" class="ghost" data-jump="claims">Review claims</button>
+                  </div>
+                </div>
+                <div class="hero-checklist">
+                  <article>
+                    <span>Step 1</span>
+                    <strong>Profile and KYC</strong>
+                    <p>Identity, work profile, and payout readiness.</p>
+                  </article>
+                  <article>
+                    <span>Step 2</span>
+                    <strong>Quote and policy</strong>
+                    <p>Understand premium drivers before activating cover.</p>
+                  </article>
+                  <article>
+                    <span>Step 3</span>
+                    <strong>Claims and support</strong>
+                    <p>See payout status and raise tickets without hunting for tools.</p>
+                  </article>
+                </div>
+              </div>
+
+              <div class="metric-strip" id="metric-strip">
+                <article><span>Eligibility</span><strong id="metric-eligibility">Not run</strong></article>
+                <article><span>Trust Tier</span><strong id="metric-tier">Unknown</strong></article>
+                <article><span>Weekly Premium</span><strong id="metric-premium">--</strong></article>
+                <article><span>Payout Status</span><strong id="metric-payout">--</strong></article>
+                <article><span>Covered Hours</span><strong id="metric-covered-hours">--</strong></article>
+                <article><span>Protected Earnings</span><strong id="metric-protected-earnings">--</strong></article>
+              </div>
+
+              <div class="content-grid content-grid-3">
+                <article class="content-card emphasis-card">
+                  <h3>Quote Narrative</h3>
+                  <div id="quote-card" class="rich-output muted">No quote generated yet.</div>
+                </article>
+                <article class="content-card">
+                  <h3>What happens next</h3>
+                  <div id="worker-action-rail" class="rich-output muted">Save your profile first so recommendations can be personalized.</div>
+                </article>
+                <article class="content-card">
+                  <h3>Timeline</h3>
+                  <ol id="timeline" class="timeline-list"></ol>
+                </article>
+              </div>
+
+              <div class="content-grid">
+                <article class="content-card">
+                  <h3>Profile Completeness</h3>
+                  <div id="profile-completeness" class="rich-output muted">No onboarding profile captured yet.</div>
+                </article>
+                <article class="content-card">
+                  <h3>Notification Center</h3>
+                  <div id="worker-notifications" class="rich-output muted">No notifications yet.</div>
+                </article>
+              </div>
+            </section>
+
+            <section class="panel worker-layer hidden" data-layer-page="onboarding">
+              <div class="panel-heading panel-heading-stack">
+                <div>
+                  <p class="section-kicker">Step 1</p>
+                  <h2>Set up your worker profile</h2>
+                </div>
+                <p>Fields are grouped by task so you can finish setup faster and understand why each section matters.</p>
+              </div>
+
+              <form id="onboarding-form" class="form-stack">
+                <section class="form-group">
+                  <div class="form-group-header">
+                    <h3>Identity and contact</h3>
+                    <p>Used for authentication, nominee details, and payout verification.</p>
+                  </div>
+                  <div class="form-grid wide-grid">
+                    <label>Phone<input name="phone" required /></label>
+                    <label>Full Name<input name="fullName" required /></label>
+                    <label>Date Of Birth<input name="dob" type="date" required /></label>
+                    <label>Gender<select name="gender"><option value="female">Female</option><option value="male">Male</option><option value="other">Other</option></select></label>
+                    <label>Emergency Contact<input name="emergencyContact" required /></label>
+                    <label>Aadhaar Last 4<input name="aadhaar4" maxlength="4" required /></label>
+                    <label>PAN Last 4<input name="pan4" maxlength="4" required /></label>
+                    <label>Nominee Name<input name="nominee" required /></label>
+                  </div>
+                </section>
+
+                <section class="form-group">
+                  <div class="form-group-header">
+                    <h3>Work profile</h3>
+                    <p>These inputs drive underwriting, trust, and disruption analysis.</p>
+                  </div>
+                  <div class="form-grid wide-grid">
+                    <label>City<input name="city" required /></label>
+                    <label>Primary Zone<input name="zone" required /></label>
+                    <label>Service Zones<input name="serviceZones" placeholder="Koramangala, HSR, Indiranagar" required /></label>
+                    <label>Platform Rider ID<input name="riderId" required /></label>
+                    <label>Platform Type<select name="platformType"><option value="swiggy">Swiggy</option><option value="zomato">Zomato</option><option value="zepto">Zepto</option><option value="other">Other</option></select></label>
+                    <label>Vehicle Type<select name="vehicleType"><option value="bike">Bike</option><option value="scooter">Scooter</option><option value="ecycle">E-Cycle</option></select></label>
+                    <label>Average Orders Per Day<input name="ordersPerDay" type="number" min="1" value="18" required /></label>
+                    <label>Average Daily Online Hours<input name="averageDailyOnlineHours" type="number" min="1" step="0.5" value="7" required /></label>
+                    <label>Active Hours Per Week<input name="activeHoursWeek" type="number" min="1" value="42" required /></label>
+                    <label>Active Hours 14d<input name="activeHours14d" type="number" min="1" value="84" required /></label>
+                    <label>Account Age (days)<input name="accountAgeDays" type="number" min="0" value="60" required /></label>
+                    <label>Location Consistency<input name="locationConsistency" type="number" min="0" max="1" step="0.01" value="0.88" required /></label>
+                    <label>Trust Score<input name="trustScore" type="number" min="0" max="1000" value="760" required /></label>
+                  </div>
+                </section>
+
+                <section class="form-group">
+                  <div class="form-group-header">
+                    <h3>Income and payout readiness</h3>
+                    <p>Used to size cover, estimate payout, and validate payment readiness.</p>
+                  </div>
+                  <div class="form-grid wide-grid">
+                    <label>Weekly Income Last Month<input name="weeklyIncome4w" type="number" min="0" value="5200" required /></label>
+                    <label>Average Weekly Earnings<input name="averageWeeklyEarnings" type="number" min="0" value="5200" required /></label>
+                    <label>Income Volatility Band<select name="volatilityBand"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
+                    <label>Payout Cycle<select name="payoutCycle"><option value="weekly">Weekly</option><option value="biweekly">Biweekly</option></select></label>
+                    <label>Cash Share (%)<input name="cashShare" type="number" min="0" max="100" value="15" required /></label>
+                    <label>Digital Share (%)<input name="digitalShare" type="number" min="0" max="100" value="85" required /></label>
+                    <label>UPI ID<input name="upiId" placeholder="name@upi" required /></label>
+                    <label>Bank Account Last 4<input name="bank4" maxlength="4" required /></label>
+                  </div>
+                </section>
+
+                <section class="form-group">
+                  <div class="form-group-header">
+                    <h3>Approvals and disclosures</h3>
+                    <p>These controls help decide eligibility and claim smoothness later.</p>
+                  </div>
+                  <div class="toggle-grid">
+                    <label class="checkbox-card"><input name="payoutAccountVerified" type="checkbox" checked /><span>Payout account verified</span></label>
+                    <label class="checkbox-card"><input name="kycVerified" type="checkbox" checked /><span>KYC verified</span></label>
+                    <label class="checkbox-card"><input name="consentAccepted" type="checkbox" checked /><span>Policy terms accepted</span></label>
+                    <label class="checkbox-card"><input name="triggerDisclosureAccepted" type="checkbox" checked /><span>Trigger disclosure accepted</span></label>
+                  </div>
+                </section>
+
+                <div class="actions actions-wide">
+                  <button type="submit">Save onboarding profile</button>
+                  <button type="button" id="delete-profile" class="ghost">Delete profile</button>
+                </div>
+              </form>
+
+              <article class="content-card top-gap">
+                <h3>Profile Summary</h3>
+                <div id="onboarding-summary" class="rich-output muted">Fill the form to generate profile summary.</div>
+              </article>
+            </section>
+
+            <section class="panel worker-layer hidden" data-layer-page="protection">
+              <div class="panel-heading panel-heading-stack">
+                <div>
+                  <p class="section-kicker">Step 2</p>
+                  <h2>Choose and understand your cover</h2>
+                </div>
+                <p>The quote flow is organized around the few inputs that actually change premium and payout outcomes.</p>
+              </div>
+
+              <div class="split-layout">
+                <form id="worker-form" class="form-stack compact-shell">
+                  <section class="form-group slim-group">
+                    <div class="form-group-header">
+                      <h3>Core worker details</h3>
+                      <p>These should mirror your saved profile so pricing stays consistent.</p>
+                    </div>
+                    <div class="form-grid">
+                      <label>Phone<input name="phone" value="9999999999" required /></label>
+                      <label>City<input name="city" value="Bengaluru" required /></label>
+                      <label>Zone<input name="zone" value="Koramangala" required /></label>
+                      <label>Account Age (days)<input name="accountAgeDays" type="number" value="60" min="0" required /></label>
+                      <label>Active Hours (14d)<input name="activeHours14d" type="number" value="52" min="0" required /></label>
+                      <label>Location Consistency<input name="locationConsistency" type="number" value="0.88" min="0" max="1" step="0.01" required /></label>
+                      <label>Trust Score<input name="trustScore" type="number" value="760" min="0" max="1000" required /></label>
+                      <label class="checkbox-row emphasis-toggle"><input name="payoutAccountVerified" type="checkbox" checked /><span>Payout account verified</span></label>
+                    </div>
+                  </section>
+
+                  <section class="form-group slim-group">
+                    <div class="form-group-header">
+                      <h3>Cover preferences</h3>
+                      <p>Adjust the plan, deductible, waiting period, and sensitivity factors before running the flow.</p>
+                    </div>
+                    <div class="form-grid">
+                      <label>Plan<select name="plan"><option value="basic">Basic Shield</option><option value="standard" selected>Standard Guard</option><option value="pro">Pro Resilience</option></select></label>
+                      <label>Claim Request Amount<input name="requestedAmount" type="number" value="600" min="0" required /></label>
+                      <label>Coverage Goal<input name="coverageGoal" type="number" value="3000" min="0" required /></label>
+                      <label>Deductible Preference<select name="deductible"><option value="none">None</option><option value="low" selected>Low</option><option value="high">High</option></select></label>
+                      <label>Waiting Period<select name="waitingPeriod"><option value="0">0 day</option><option value="1" selected>1 day</option><option value="2">2 days</option></select></label>
+                      <label>Co-pay<select name="copay"><option value="0">0%</option><option value="10" selected>10%</option><option value="20">20%</option></select></label>
+                    </div>
+                    <div class="toggle-grid toggle-grid-tight">
+                      <label class="checkbox-card"><input name="factorRain" type="checkbox" checked /><span>Heavy rain disruption sensitivity</span></label>
+                      <label class="checkbox-card"><input name="factorAqi" type="checkbox" /><span>Severe AQI disruption sensitivity</span></label>
+                      <label class="checkbox-card"><input name="factorCurfew" type="checkbox" /><span>Curfew and zone restriction sensitivity</span></label>
+                    </div>
+                  </section>
+
+                  <div class="actions actions-wide">
+                    <button type="submit">Run full quote and claim flow</button>
+                    <button type="button" id="refresh-dashboard" class="ghost">Refresh dashboard</button>
+                  </div>
+                </form>
+
+                <div class="stacked-results">
+                  <article class="content-card emphasis-card">
+                    <h3>Premium Explainability</h3>
+                    <div id="premium-explain" class="rich-output muted">Run premium lab to view factor-based explainability.</div>
+                  </article>
+                  <article class="content-card">
+                    <h3>Plan Comparison</h3>
+                    <div id="plan-compare" class="rich-output muted">Plan comparison will appear after quote.</div>
+                  </article>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel worker-layer hidden" data-layer-page="claims">
+              <div class="panel-heading panel-heading-stack">
+                <div>
+                  <p class="section-kicker">Step 3</p>
+                  <h2>Track claims and payout readiness</h2>
+                </div>
+                <p>Your policy, claims, payouts, and claim pre-check are grouped together so you can understand the whole outcome in one screen.</p>
+              </div>
+
+              <div class="dashboard-grid dashboard-grid-3">
+                <article class="content-card">
+                  <h3>Policies</h3>
+                  <div id="policy-list" class="list-output muted">No policy loaded yet.</div>
+                </article>
+                <article class="content-card">
+                  <h3>Claims</h3>
+                  <div id="claim-list" class="list-output muted">No claim loaded yet.</div>
+                </article>
+                <article class="content-card">
+                  <h3>Payouts</h3>
+                  <div id="payout-list" class="list-output muted">No payout loaded yet.</div>
+                </article>
+              </div>
+
+              <div class="content-grid top-gap">
+                <article class="content-card emphasis-card">
+                  <h3>Claim Pre-check</h3>
+                  <form id="precheck-form" class="compact-form">
+                    <label>Requested Amount<input name="requestedAmount" type="number" min="0" value="1200" required /></label>
+                    <label>Trigger Confidence<input name="confidence" type="number" min="0" max="1" step="0.01" value="0.92" required /></label>
+                    <label>Days Impacted<input name="daysImpacted" type="number" min="1" value="2" required /></label>
+                    <button type="submit">Run eligibility check</button>
+                  </form>
+                  <div id="precheck-result" class="rich-output muted">Run pre-check to see if a claim is likely to pass validation.</div>
+                </article>
+                <article class="content-card">
+                  <h3>Required Documents</h3>
+                  <ul class="guidance-list" id="claim-checklist">
+                    <li>Trigger event reference</li>
+                    <li>Policy ID and worker match</li>
+                    <li>Income disruption proof note</li>
+                    <li>Payout account verification</li>
+                  </ul>
+                </article>
+              </div>
+            </section>
+
+            <section class="panel worker-layer hidden" data-layer-page="policy">
+              <div class="panel-heading panel-heading-stack">
+                <div>
+                  <p class="section-kicker">Policy center</p>
+                  <h2>Understand renewals and wording</h2>
+                </div>
+                <p>Renewal, policy notes, transparent terms, and glossary are grouped together so policy information feels readable instead of fragmented.</p>
+              </div>
+
+              <div class="content-grid">
+                <article class="content-card emphasis-card">
+                  <h3>Renewal Simulator</h3>
+                  <form id="renewal-form" class="compact-form">
+                    <label>Coverage Goal<input name="coverageGoal" type="number" min="0" value="4000" required /></label>
+                    <label>Risk Appetite<select name="risk"><option value="conservative">Conservative</option><option value="balanced" selected>Balanced</option><option value="aggressive">Aggressive</option></select></label>
+                    <label>Expected Weekly Income<input name="income" type="number" min="0" value="5600" required /></label>
+                    <button type="submit">Simulate renewal</button>
+                  </form>
+                  <div id="renewal-result" class="rich-output muted">Run renewal simulation to view expected premium and recommendation.</div>
+                </article>
+                <article class="content-card">
+                  <h3>Policy Notes</h3>
+                  <div id="policy-notes" class="rich-output muted">No policy insights yet.</div>
+                </article>
+                <article class="content-card">
+                  <h3>Coverage Terms</h3>
+                  <div id="coverage-terms" class="rich-output muted">Coverage terms will load here.</div>
+                </article>
+                <article class="content-card">
+                  <h3>Policy Glossary</h3>
+                  <div id="policy-glossary" class="rich-output muted">Policy glossary will load here.</div>
+                </article>
+              </div>
+            </section>
+
+            <section class="panel worker-layer hidden" data-layer-page="support">
+              <div class="panel-heading panel-heading-stack">
+                <div>
+                  <p class="section-kicker">Support</p>
+                  <h2>Raise issues without losing context</h2>
+                </div>
+                <p>Ticket creation and open-ticket tracking are side by side so you can file and verify status in one place.</p>
+              </div>
+
+              <div class="content-grid">
+                <article class="content-card emphasis-card">
+                  <h3>Raise Ticket</h3>
+                  <form id="support-form" class="compact-form">
+                    <label>Issue Type<select name="issueType"><option value="quote">Quote mismatch</option><option value="claim">Claim delay</option><option value="payout">Payout issue</option><option value="other">Other</option></select></label>
+                    <label>Priority<select name="priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
+                    <label>Details<textarea name="details" rows="4" required></textarea></label>
+                    <button type="submit">Submit ticket</button>
+                  </form>
+                </article>
+                <article class="content-card">
+                  <h3>Open Tickets</h3>
+                  <div id="support-list" class="rich-output muted">No support tickets submitted.</div>
+                </article>
+              </div>
+            </section>
+
+            <section class="panel worker-layer hidden" data-layer-page="insights">
+              <div class="panel-heading panel-heading-stack">
+                <div>
+                  <p class="section-kicker">Learn</p>
+                  <h2>Understand cover in plain language</h2>
+                </div>
+                <p>Keep the educational content separate from action screens so learning never blocks doing.</p>
+              </div>
+
+              <div class="content-grid">
+                <article class="content-card">
+                  <h3>How payout triggers work</h3>
+                  <ul class="guidance-list">
+                    <li>Claims are initiated against active policies with validated trigger events.</li>
+                    <li>Automated fraud scoring routes suspicious claims to review lanes.</li>
+                    <li>Low-risk claims can be approved and paid immediately.</li>
+                    <li>Duplicate event attempts are blocked through idempotency keys.</li>
+                  </ul>
+                </article>
+                <article class="content-card">
+                  <h3>How to keep trust high</h3>
+                  <ul class="guidance-list">
+                    <li>Keep payout account verified and profile details consistent.</li>
+                    <li>Avoid frequent location anomalies and suspicious device behavior.</li>
+                    <li>Submit honest requested amounts within realistic weekly loss bands.</li>
+                    <li>Use standard plans for balanced premium and payout coverage.</li>
+                  </ul>
+                </article>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>

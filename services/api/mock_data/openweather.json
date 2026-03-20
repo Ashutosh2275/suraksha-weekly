@@ -1,0 +1,57 @@
+{
+  "_meta": {
+    "description": "Static mock weather readings for 5 Indian metro cities. Used when OpenWeatherMap API is unavailable and Redis cache is empty.",
+    "fields": "rainfall_mm_per_hour, temperature_celsius, wind_speed_kmh, humidity_pct, condition",
+    "last_updated": "2026-03-16"
+  },
+  "cities": {
+    "Mumbai": {
+      "rainfall_mm_per_hour": 8.5,
+      "temperature_celsius": 28.2,
+      "wind_speed_kmh": 24.0,
+      "humidity_pct": 92,
+      "condition": "Heavy Rain",
+      "sources": ["OpenWeatherMap_MOCK"]
+    },
+    "Delhi": {
+      "rainfall_mm_per_hour": 0.0,
+      "temperature_celsius": 44.2,
+      "wind_speed_kmh": 9.0,
+      "humidity_pct": 18,
+      "condition": "Extreme Heat",
+      "sources": ["OpenWeatherMap_MOCK"]
+    },
+    "Bengaluru": {
+      "rainfall_mm_per_hour": 1.2,
+      "temperature_celsius": 28.8,
+      "wind_speed_kmh": 12.0,
+      "humidity_pct": 68,
+      "condition": "Partly Cloudy",
+      "sources": ["OpenWeatherMap_MOCK"]
+    },
+    "Hyderabad": {
+      "rainfall_mm_per_hour": 0.0,
+      "temperature_celsius": 38.5,
+      "wind_speed_kmh": 9.0,
+      "humidity_pct": 32,
+      "condition": "Clear",
+      "sources": ["OpenWeatherMap_MOCK"]
+    },
+    "Chennai": {
+      "rainfall_mm_per_hour": 0.4,
+      "temperature_celsius": 35.5,
+      "wind_speed_kmh": 18.0,
+      "humidity_pct": 79,
+      "condition": "Humid",
+      "sources": ["OpenWeatherMap_MOCK"]
+    },
+    "_default": {
+      "rainfall_mm_per_hour": 0.5,
+      "temperature_celsius": 30.0,
+      "wind_speed_kmh": 12.0,
+      "humidity_pct": 60,
+      "condition": "Clear",
+      "sources": ["OpenWeatherMap_MOCK"]
+    }
+  }
+}

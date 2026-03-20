@@ -1,0 +1,369 @@
+name: suraksha-deploy
+
+on:
+  push:
+    branches: [main]
+    # Only fires after CI passes — see branch protection rules in CONTRIBUTING.md
+
+env:
+  PYTHON_VERSION: "3.11"
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/suraksha
+  DEPLOY_TIMEOUT_SECONDS: 120
+  HEALTH_CHECK_MAX_ATTEMPTS: 40   # 40 × 3s = 120s
+
+# Cancel any in-progress deployment on new push to main
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false  # Never cancel an active deploy — let it finish or rollback
+
+jobs:
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 1 — Build & push production images
+# ─────────────────────────────────────────────────────────────────────────────
+  build-images:
+    name: "Build & Push Production Images"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      api_image: ${{ steps.meta-api.outputs.tags }}
+      api_digest: ${{ steps.push-api.outputs.digest }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker meta — api
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build & push api image
+        id: push-api
+        uses: docker/build-push-action@v5
+        with:
+          context: services/api
+          file: services/api/Dockerfile
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 2 — Deploy backend to Railway / Render
+# ─────────────────────────────────────────────────────────────────────────────
+  deploy-backend:
+    name: "Deploy Backend (Railway/Render)"
+    needs: build-images
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      deployed_sha: ${{ github.sha }}
+      previous_sha: ${{ steps.previous.outputs.sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Resolve previous successful deploy SHA
+        id: previous
+        run: |
+          PREV=$(git rev-parse HEAD~1 2>/dev/null || echo "")
+          echo "sha=$PREV" >> "$GITHUB_OUTPUT"
+          echo "Previous SHA: $PREV"
+
+      # ── Railway deploy (primary) ─────────────────────────────────────────
+      - name: Deploy to Railway
+        if: ${{ secrets.RAILWAY_TOKEN != '' }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          npm install -g @railway/cli
+          railway redeploy --service suraksha-api --yes
+        continue-on-error: true
+        id: railway-deploy
+
+      # ── Render deploy (fallback) ─────────────────────────────────────────
+      - name: Deploy to Render (fallback)
+        if: steps.railway-deploy.outcome == 'failure' || secrets.RAILWAY_TOKEN == ''
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "WARN: Neither Railway nor Render deploy credentials found. Skipping."
+            exit 0
+          fi
+          curl -fsSL -X POST "$RENDER_DEPLOY_HOOK" \
+            -H "Content-Type: application/json" \
+            --fail-with-body
+
+      # ── Set GitHub deployment status ─────────────────────────────────────
+      - name: Create GitHub deployment
+        uses: actions/github-script@v7
+        id: create-deployment
+        with:
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: 'production',
+              required_contexts: [],
+              description: `Deploying sha=${context.sha.slice(0,7)}`,
+              auto_merge: false,
+            });
+            return deployment.data.id;
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 3 — Health check & auto-rollback
+# ─────────────────────────────────────────────────────────────────────────────
+  health-check:
+    name: "Health Check & Rollback Guard"
+    needs: deploy-backend
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install httpx for health checks
+        run: pip install httpx
+
+      # ── Wait for /internal/startup (max 120s) ────────────────────────────
+      - name: Wait for production startup probe
+        env:
+          API_PROD_URL: ${{ secrets.API_PROD_URL }}
+        run: |
+          echo "Polling $API_PROD_URL/health/internal/startup ..."
+          for i in $(seq 1 ${{ env.HEALTH_CHECK_MAX_ATTEMPTS }}); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              "$API_PROD_URL/health/internal/startup" 2>/dev/null || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "Startup probe passed (attempt $i, status=200)."
+              exit 0
+            fi
+            echo "  attempt $i/${{ env.HEALTH_CHECK_MAX_ATTEMPTS }} — status=$STATUS"
+            sleep 3
+          done
+          echo "FAIL: Production API did not pass startup probe within ${{ env.DEPLOY_TIMEOUT_SECONDS }}s."
+          exit 1
+        id: startup-probe
+
+      # ── Full E2E health check ─────────────────────────────────────────────
+      - name: E2E health check
+        env:
+          API_PROD_URL: ${{ secrets.API_PROD_URL }}
+        run: |
+          BODY=$(curl -sf "$API_PROD_URL/health/e2e" \
+            -H "X-Internal-Service: ${{ secrets.INTERNAL_SERVICE_SECRET }}")
+          echo "$BODY" | python -c "
+          import sys, json
+          body = json.load(sys.stdin)
+          status = body.get('status', '')
+          if status not in ('ok', 'healthy'):
+              print(f'FAIL: /health/e2e returned status={status!r}')
+              sys.exit(1)
+          latencies = body.get('steps', [])
+          for step in latencies:
+              name = step.get('name', '?')
+              ms   = step.get('latency_ms', 0)
+              ok   = step.get('status', '') in ('ok', 'pass')
+              print(f'  {name}: {ms}ms  [{\"ok\" if ok else \"FAIL\"}]')
+          print(f'OK: /health/e2e passed, status={status!r}')
+          "
+        id: e2e-check
+
+      # ── Rollback on failure ───────────────────────────────────────────────
+      - name: Rollback — redeploy previous SHA
+        if: failure() && steps.startup-probe.outcome == 'failure' || failure() && steps.e2e-check.outcome == 'failure'
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          PREV_SHA: ${{ needs.deploy-backend.outputs.previous_sha }}
+        run: |
+          echo "ROLLBACK triggered — reverting to $PREV_SHA"
+
+          # Railway rollback
+          if [ -n "$RAILWAY_TOKEN" ]; then
+            npm install -g @railway/cli
+            railway redeploy --service suraksha-api --yes --deployment "$PREV_SHA" || true
+          fi
+
+          # Render rollback (re-trigger previous hook — Render uses image digest)
+          if [ -n "$RENDER_DEPLOY_HOOK" ]; then
+            curl -fsSL -X POST "$RENDER_DEPLOY_HOOK" \
+              -H "Content-Type: application/json" \
+              -d "{\"imageUrl\":\"${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-api:sha-${PREV_SHA:0:7}\"}" \
+              || true
+          fi
+
+      - name: Write rollback audit log to production DB
+        if: failure()
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          python - <<'PYEOF'
+          import os, asyncio, datetime, json
+          from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+          from sqlalchemy import text
+
+          DB_URL = os.environ.get("DATABASE_URL", "")
+          if not DB_URL:
+              print("WARN: PROD_DATABASE_URL not set — skipping AuditLog write.")
+              exit(0)
+
+          SHA = os.environ.get("GITHUB_SHA", "unknown")
+          PREV = os.environ.get("PREV_SHA", "unknown")
+          RUN  = os.environ.get("GITHUB_RUN_ID", "unknown")
+
+          async def write_audit():
+              engine = create_async_engine(DB_URL, echo=False)
+              async with AsyncSession(engine) as session:
+                  await session.execute(
+                      text("""
+                        INSERT INTO audit_logs
+                          (entity_type, entity_id, action, actor, payload, created_at)
+                        VALUES
+                          (:etype, :eid, :action, :actor, :payload, :ts)
+                      """),
+                      {
+                          "etype":   "Deployment",
+                          "eid":     SHA,
+                          "action":  "ROLLBACK_TRIGGERED",
+                          "actor":   "github-actions",
+                          "payload": json.dumps({
+                              "deployed_sha":  SHA,
+                              "rollback_to":   PREV,
+                              "run_id":        RUN,
+                              "reason":        "health_check_failed",
+                          }),
+                          "ts": datetime.datetime.utcnow(),
+                      }
+                  )
+                  await session.commit()
+              await engine.dispose()
+              print(f"AuditLog ROLLBACK_TRIGGERED written for sha={SHA}")
+
+          asyncio.run(write_audit())
+          PYEOF
+
+      # ── Update GitHub deployment status ──────────────────────────────────
+      - name: Set deployment status — success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ needs.deploy-backend.outputs.deployed_sha }},
+              state: 'success',
+              description: `Deployed sha=${ context.sha.slice(0,7) }, health=healthy, rollback=not_triggered`,
+              environment_url: process.env.API_PROD_URL,
+            });
+        env:
+          API_PROD_URL: ${{ secrets.API_PROD_URL }}
+
+      - name: Set deployment status — failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: ${{ needs.deploy-backend.outputs.deployed_sha }},
+              state: 'failure',
+              description: `Deploy sha=${ context.sha.slice(0,7) } failed, health=failed, rollback=triggered`,
+            });
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 4 — Deploy Frontend to Vercel
+# ─────────────────────────────────────────────────────────────────────────────
+  deploy-frontend:
+    name: "Deploy Frontend (Vercel)"
+    needs: health-check
+    runs-on: ubuntu-latest
+    # Only deploy frontend after backend health check passes
+    if: success()
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy web app to Vercel (production)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID_WEB: ${{ secrets.VERCEL_PROJECT_ID_WEB }}
+        run: |
+          cd apps/web
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          vercel build --prod --token=$VERCEL_TOKEN
+          vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+        id: deploy-web
+
+      - name: Deploy admin app to Vercel (production)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID_ADMIN: ${{ secrets.VERCEL_PROJECT_ID_ADMIN }}
+        run: |
+          cd apps/admin
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          vercel build --prod --token=$VERCEL_TOKEN
+          vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+        id: deploy-admin
+
+      - name: Post GitHub commit status
+        uses: actions/github-script@v7
+        env:
+          API_PROD_URL: ${{ secrets.API_PROD_URL }}
+        with:
+          script: |
+            const sha    = context.sha;
+            const short  = sha.slice(0,7);
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.repos.createCommitStatus({
+              owner:       context.repo.owner,
+              repo:        context.repo.repo,
+              sha:         sha,
+              state:       'success',
+              target_url:  runUrl,
+              description: `Deployed sha=${short}, health=healthy, rollback=not_triggered`,
+              context:     'suraksha/deploy',
+            });

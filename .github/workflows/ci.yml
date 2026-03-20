@@ -1,0 +1,555 @@
+name: suraksha-ci
+
+on:
+  pull_request:
+    branches: [main, staging, develop]
+  push:
+    branches: [main, staging, develop]
+
+env:
+  PYTHON_VERSION: "3.11"
+  NODE_VERSION: "20"
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/suraksha
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage 1 — Build
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+  build:
+    name: "Stage 1 — Build"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Python ----------------------------------------------------------------
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install Python dependencies
+        working-directory: services/api
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          # Freeze check — CI sees the same pinned versions as prod
+          pip freeze > /tmp/freeze.txt
+          diff <(sort requirements.txt) <(grep -f requirements.txt /tmp/freeze.txt | sort) \
+            && echo "Dependency versions consistent." \
+            || echo "WARNING: version drift detected — update requirements.txt"
+
+      # Node ------------------------------------------------------------------
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Node dependencies (root + workspaces)
+        run: npm ci
+
+      - name: TypeScript strict check — web
+        working-directory: apps/web
+        run: npx tsc --noEmit
+
+      - name: TypeScript strict check — admin
+        working-directory: apps/admin
+        run: npx tsc --noEmit
+
+      # Docker build ----------------------------------------------------------
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build api image
+        uses: docker/build-push-action@v5
+        with:
+          context: services/api
+          file: services/api/Dockerfile
+          push: false
+          tags: ${{ env.IMAGE_PREFIX }}-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build web image
+        uses: docker/build-push-action@v5
+        with:
+          context: apps/web
+          file: apps/web/Dockerfile
+          push: false
+          tags: ${{ env.IMAGE_PREFIX }}-web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Trivy vulnerability scan ---------------------------------------------
+      - name: Trivy scan — api image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}-api:${{ github.sha }}
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+      - name: Trivy scan — api image (MEDIUM warn only)
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}-api:${{ github.sha }}
+          format: table
+          exit-code: 0
+          ignore-unfixed: true
+          severity: MEDIUM
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage 2 — Unit & Integration Tests
+# ─────────────────────────────────────────────────────────────────────────────
+  test:
+    name: "Stage 2 — Unit & Integration Tests"
+    needs: build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: suraksha
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: suraksha_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U suraksha -d suraksha_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://suraksha:password@localhost:5432/suraksha_db
+      REDIS_URL: redis://localhost:6379/0
+      JWT_SECRET: ci-jwt-secret
+      MOCK_MODE: "true"
+      ENVIRONMENT: testing
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install Python dependencies
+        working-directory: services/api
+        run: pip install -r requirements.txt
+
+      - name: Run Alembic migrations
+        working-directory: services/api
+        run: alembic upgrade head
+
+      - name: pytest — unit tests
+        working-directory: services/api
+        run: |
+          pytest tests/unit/ -v \
+            --cov=services --cov=ml \
+            --cov-report=xml:coverage-unit.xml \
+            --cov-fail-under=80 \
+            -q
+
+      - name: pytest — integration tests
+        working-directory: services/api
+        run: |
+          pytest tests/integration/ -v \
+            --cov=services --cov=ml \
+            --cov-report=xml:coverage-integration.xml \
+            -q
+
+      - name: pytest — idempotency contract tests
+        working-directory: services/api
+        run: |
+          pytest tests/ -k "idempotency" -v \
+            --tb=short
+
+      - name: Upload coverage XML artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports
+          path: |
+            services/api/coverage-unit.xml
+            services/api/coverage-integration.xml
+          retention-days: 7
+
+      # Node tests (web + admin) -------------------------------------------
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: npm test — web
+        working-directory: apps/web
+        run: npm test -- --passWithNoTests
+
+      - name: npm test — admin
+        working-directory: apps/admin
+        run: npm test -- --passWithNoTests
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage 3 — Security Scan
+# ─────────────────────────────────────────────────────────────────────────────
+  security:
+    name: "Stage 3 — Security Scan"
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # trufflehog needs full history
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install Python dependencies
+        working-directory: services/api
+        run: pip install -r requirements.txt
+
+      # bandit ---------------------------------------------------------------
+      - name: bandit — medium severity warning
+        working-directory: services/api
+        continue-on-error: true
+        run: bandit -r . -ll -x tests/ --format txt
+
+      - name: bandit — high severity hard fail
+        working-directory: services/api
+        run: bandit -r . -lll -x tests/ --format txt
+
+      # safety ---------------------------------------------------------------
+      - name: safety — known CVE check
+        working-directory: services/api
+        run: |
+          pip install safety
+          safety check -r requirements.txt --full-report
+
+      # npm audit ------------------------------------------------------------
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: npm audit — web (high+critical = fail)
+        working-directory: apps/web
+        run: npm audit --audit-level=high
+
+      - name: npm audit — admin (high+critical = fail)
+        working-directory: apps/admin
+        run: npm audit --audit-level=high
+
+      # trufflehog secret scan -----------------------------------------------
+      - name: trufflehog — secret detection
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+        # Hard block: verified secrets cause exit-code 1 (trufflehog default)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage 4 — Contract Tests
+# ─────────────────────────────────────────────────────────────────────────────
+  contract:
+    name: "Stage 4 — Contract Tests"
+    needs: test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: suraksha
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: suraksha_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U suraksha -d suraksha_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://suraksha:password@localhost:5432/suraksha_db
+      REDIS_URL: redis://localhost:6379/0
+      JWT_SECRET: ci-jwt-secret
+      MOCK_MODE: "true"
+      ENVIRONMENT: testing
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install Python dependencies
+        working-directory: services/api
+        run: pip install -r requirements.txt
+
+      - name: Run Alembic migrations
+        working-directory: services/api
+        run: alembic upgrade head
+
+      - name: pytest — contract tests
+        working-directory: services/api
+        run: pytest tests/integration/ -k "contract" -v --tb=short
+
+      - name: Schema compatibility check (TypeScript ↔ Pydantic)
+        run: |
+          python - <<'EOF'
+          """
+          Validates that shared/types/index.ts interface names match the Pydantic
+          schema class names exported from services/api/schemas/.
+          Fails the build if any interface defined in shared/types/ is missing a
+          corresponding Pydantic response schema.
+          """
+          import re
+          import sys
+          from pathlib import Path
+
+          ts_src = Path("shared/types/index.ts").read_text()
+          ts_ifaces = set(re.findall(r"export\s+interface\s+(\w+)", ts_src))
+
+          py_schemas_dir = Path("services/api/schemas")
+          py_classes: set[str] = set()
+          for f in py_schemas_dir.glob("*.py"):
+              py_classes.update(re.findall(r"class\s+(\w+)\s*\(", f.read_text()))
+
+          missing = []
+          for iface in ts_ifaces:
+              # Convention: TS WorkerProfile → Python WorkerProfileResponse or WorkerProfile
+              candidates = {iface, f"{iface}Response", f"{iface}Schema"}
+              if not candidates.intersection(py_classes):
+                  missing.append(iface)
+
+          if missing:
+              print(f"FAIL: TypeScript interfaces missing Pydantic counterparts: {missing}")
+              sys.exit(1)
+          else:
+              print(f"OK: All {len(ts_ifaces)} TS interfaces have Pydantic counterparts.")
+          EOF
+
+      - name: API versioning check (/api/v1/ prefix enforced)
+        working-directory: services/api
+        run: |
+          python - <<'EOF'
+          import re, sys
+          from pathlib import Path
+
+          issues = []
+          for f in Path("routers").glob("*.py"):
+              src = f.read_text()
+              # router = APIRouter(prefix=...) lines must use /api/v1 or be mounted that way
+              # We check app.py includes_router with /api/v1 prefix
+
+          app_src = Path("app.py").read_text()
+          if "prefix=\"/api/v1\"" not in app_src and "prefix='/api/v1'" not in app_src:
+              issues.append("app.py does not mount routers under /api/v1 prefix")
+
+          if issues:
+              for i in issues:
+                  print(f"FAIL: {i}")
+              sys.exit(1)
+          else:
+              print("OK: /api/v1 prefix confirmed in app.py router mounts.")
+          EOF
+
+      - name: Expand-contract drop_column safety check (PRD §40.5)
+        run: |
+          python - <<'EOF'
+          """
+          Scans every Alembic migration file for op.drop_column() calls and
+          verifies the column being dropped is NOT referenced in any active
+          router file.  Hard fails the build if a live router still uses the
+          column, preventing accidental backward-incompatible schema changes.
+          """
+          import re, sys
+          from pathlib import Path
+
+          migrations_dir = Path("services/api/alembic/versions")
+          routers_dir    = Path("services/api/routers")
+
+          # Collect all router source code
+          router_sources: dict[str, str] = {
+              f.name: f.read_text()
+              for f in routers_dir.glob("*.py")
+          }
+
+          # Pattern: op.drop_column('table', 'column') or op.drop_column("table", "column")
+          DROP_PATTERN = re.compile(
+              r"""op\.drop_column\s*\(\s*['"][^'"]+['"]\s*,\s*['"]([^'"]+)['"]\s*\)"""
+          )
+
+          failures: list[str] = []
+
+          if not migrations_dir.exists():
+              print("INFO: No alembic/versions directory found — skipping drop_column check.")
+              sys.exit(0)
+
+          for migration_file in sorted(migrations_dir.glob("*.py")):
+              src = migration_file.read_text()
+              for match in DROP_PATTERN.finditer(src):
+                  column_name = match.group(1)
+                  referencing_routers = [
+                      router_name
+                      for router_name, router_src in router_sources.items()
+                      if re.search(rf'\b{re.escape(column_name)}\b', router_src)
+                  ]
+                  if referencing_routers:
+                      failures.append(
+                          f"  FAIL: {migration_file.name} drops column '{column_name}' "
+                          f"still referenced in: {', '.join(referencing_routers)}"
+                      )
+                  else:
+                      print(
+                          f"  OK: {migration_file.name} drops '{column_name}' "
+                          f"— no active router references found."
+                      )
+
+          if failures:
+              print("\nExpand-contract safety check FAILED:")
+              for line in failures:
+                  print(line)
+              print(
+                  "\nFix: Ensure the column is removed from all router files AND the "
+                  "API version that referenced it has been sunset before dropping."
+              )
+              sys.exit(1)
+          else:
+              print("OK: All op.drop_column calls are safe to apply.")
+          EOF
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage 5 — End-to-End Tests  (staging branch only)
+# ─────────────────────────────────────────────────────────────────────────────
+  e2e:
+    name: "Stage 5 — E2E Tests (staging)"
+    needs: [test, security, contract]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/staging'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Copy demo environment files
+        run: |
+          cp .env.demo services/api/.env
+          cp apps/web/.env.local.example apps/web/.env.local
+          cp apps/admin/.env.local.example apps/admin/.env.local
+
+      - name: Start all services
+        run: docker compose -f infra/docker-compose.yml up -d --build
+
+      - name: Wait for API startup probe (max 60s)
+        run: |
+          echo "Waiting for /health/internal/startup to return 200..."
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health/internal/startup || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "API startup complete (attempt $i)."
+              exit 0
+            fi
+            echo "  attempt $i — status=$STATUS, retrying in 2s..."
+            sleep 2
+          done
+          echo "FAIL: API did not pass startup probe within 60s."
+          docker compose -f infra/docker-compose.yml logs api
+          exit 1
+
+      - name: Install Python test dependencies
+        run: pip install -r services/api/requirements.txt
+
+      - name: Seed demo data
+        run: python scripts/demo_reset.py
+
+      - name: pytest — E2E test suite
+        env:
+          API_BASE_URL: http://localhost:8000
+          MOCK_MODE: "true"
+        run: |
+          pytest services/api/tests/e2e/ -v --tb=short -q
+
+      - name: E2E health check endpoint
+        run: |
+          BODY=$(curl -sf http://localhost:8000/health/e2e)
+          echo "$BODY" | python -c "
+          import sys, json
+          body = json.load(sys.stdin)
+          status = body.get('status', '')
+          if status not in ('ok', 'healthy'):
+              print(f'FAIL: /health/e2e returned status={status!r}')
+              sys.exit(1)
+          print(f'OK: /health/e2e status={status!r}')
+          "
+
+      - name: Collect docker logs on failure
+        if: failure()
+        run: docker compose -f infra/docker-compose.yml logs
+
+      - name: Tear down services
+        if: always()
+        run: docker compose -f infra/docker-compose.yml down -v

@@ -1,0 +1,52 @@
+{
+  "_meta": {
+    "description": "Static mock AQI readings for 5 Indian metro cities. Used when OpenAQ API is unavailable and Redis cache is empty.",
+    "fields": "aqi_value, dominant_pollutant, pm25 (µg/m³), pm10 (µg/m³)",
+    "scale": "India NAQI: 0-50 Good, 51-100 Satisfactory, 101-200 Moderate, 201-300 Poor, 301-400 Very Poor, 401-500 Severe",
+    "last_updated": "2026-03-16"
+  },
+  "cities": {
+    "Mumbai": {
+      "aqi_value": 152,
+      "dominant_pollutant": "PM10",
+      "pm25": 82.0,
+      "pm10": 118.0,
+      "sources": ["OpenAQ_MOCK"]
+    },
+    "Delhi": {
+      "aqi_value": 318,
+      "dominant_pollutant": "PM2.5",
+      "pm25": 178.0,
+      "pm10": 215.0,
+      "sources": ["OpenAQ_MOCK", "SAFAR_MOCK"]
+    },
+    "Bengaluru": {
+      "aqi_value": 82,
+      "dominant_pollutant": "PM2.5",
+      "pm25": 42.0,
+      "pm10": 60.0,
+      "sources": ["OpenAQ_MOCK"]
+    },
+    "Hyderabad": {
+      "aqi_value": 165,
+      "dominant_pollutant": "PM10",
+      "pm25": 90.0,
+      "pm10": 130.0,
+      "sources": ["OpenAQ_MOCK"]
+    },
+    "Chennai": {
+      "aqi_value": 118,
+      "dominant_pollutant": "PM2.5",
+      "pm25": 62.0,
+      "pm10": 90.0,
+      "sources": ["OpenAQ_MOCK"]
+    },
+    "_default": {
+      "aqi_value": 110,
+      "dominant_pollutant": "PM2.5",
+      "pm25": 58.0,
+      "pm10": 85.0,
+      "sources": ["OpenAQ_MOCK"]
+    }
+  }
+}

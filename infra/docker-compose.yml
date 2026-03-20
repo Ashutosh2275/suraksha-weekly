@@ -1,0 +1,156 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: suraksha-postgres
+    environment:
+      POSTGRES_USER: suraksha
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: suraksha_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U suraksha -d suraksha_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - suraksha
+
+  redis:
+    image: redis:7-alpine
+    container_name: suraksha-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+    networks:
+      - suraksha
+
+  api:
+    build:
+      context: ../services/api
+      dockerfile: Dockerfile
+    container_name: suraksha-api
+    environment:
+      DATABASE_URL: postgresql+asyncpg://suraksha:password@postgres:5432/suraksha_db
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: dev-jwt-secret-change-in-production
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRATION_HOURS: 24
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-}
+      OPENAQ_API_KEY: ${OPENAQ_API_KEY:-}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      MOCK_MODE: "true"
+      DEBUG: "true"
+      ENVIRONMENT: "development"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - suraksha
+
+  web:
+    build:
+      context: ../apps/web
+      dockerfile: Dockerfile
+    container_name: suraksha-web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - suraksha
+
+  admin:
+    build:
+      context: ../apps/admin
+      dockerfile: Dockerfile
+    container_name: suraksha-admin
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+      NEXT_PUBLIC_ADMIN_MODE: "true"
+      NODE_ENV: production
+    ports:
+      - "3001:3000"
+    depends_on:
+      - api
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - suraksha
+
+  trigger-poller:
+    build:
+      context: ../services/trigger-poller
+      dockerfile: Dockerfile
+    container_name: suraksha-trigger-poller
+    environment:
+      DATABASE_URL: postgresql://suraksha:password@postgres:5432/suraksha_db
+      REDIS_URL: redis://redis:6379/0
+      POLL_INTERVAL_SECONDS: "300"
+      MOCK_MODE: "true"
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-}
+      OPENAQ_API_KEY: ${OPENAQ_API_KEY:-}
+      REDIS_TRIGGER_CHANNEL: "trigger_events"
+      MOCK_FEEDS_DIR: /mock_feeds
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./mock_feeds:/mock_feeds:ro
+    restart: unless-stopped
+    networks:
+      - suraksha
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  suraksha:
+    driver: bridge
