@@ -1,6 +1,13 @@
 type QueueJob = {
   id: string;
-  type: "trigger-ingestion" | "trigger-ingestion-batch" | "manual-review" | "reconciliation";
+  type:
+    | "trigger-ingestion"
+    | "trigger-ingestion-batch"
+    | "manual-review"
+    | "reconciliation"
+    | "trigger.confirmed"
+    | "claim.initiated"
+    | "surge_mode.activated";
   payload: Record<string, unknown>;
   createdAt: string;
 };

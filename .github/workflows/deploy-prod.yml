@@ -1,0 +1,77 @@
+name: deploy-prod
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-canary:
+    name: deploy-canary
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "${KUBE_CONFIG_DATA}" | base64 -d > "$HOME/.kube/config"
+        env:
+          KUBE_CONFIG_DATA: ${{ secrets.PROD_KUBECONFIG_B64 }}
+
+      - name: Deploy canary release (10% traffic)
+        run: |
+          set -euo pipefail
+          kubectl -n suraksha set image deployment/api api=${{ secrets.PROD_API_IMAGE }}
+          kubectl -n suraksha set image deployment/fraud fraud=${{ secrets.PROD_FRAUD_IMAGE }}
+          kubectl -n suraksha set image deployment/trigger trigger=${{ secrets.PROD_TRIGGER_IMAGE }}
+          kubectl -n suraksha rollout status deployment/api --timeout=300s
+          kubectl -n suraksha rollout status deployment/fraud --timeout=300s
+          kubectl -n suraksha rollout status deployment/trigger --timeout=300s
+          kubectl -n suraksha patch virtualservice suraksha-api --type merge -p '{"spec":{"http":[{"route":[{"destination":{"host":"api-stable"},"weight":90},{"destination":{"host":"api-canary"},"weight":10}]}]}}'
+
+      - name: Smoke tests on canary
+        env:
+          PROD_API_URL: ${{ secrets.PROD_API_URL }}
+          PROD_FRAUD_URL: ${{ secrets.PROD_FRAUD_URL }}
+          PROD_TRIGGER_URL: ${{ secrets.PROD_TRIGGER_URL }}
+        run: |
+          set -euo pipefail
+          for endpoint in \
+            "${PROD_API_URL}/internal/ready" \
+            "${PROD_FRAUD_URL}/internal/ready" \
+            "${PROD_TRIGGER_URL}/internal/ready"; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$endpoint")
+            if [ "$code" != "200" ]; then
+              echo "Smoke test failed for $endpoint (status=$code)"
+              exit 1
+            fi
+          done
+
+      - name: Observe canary for 5 minutes and auto-rollback if error rate > 1%
+        env:
+          PROMQL_ERROR_RATE_URL: ${{ secrets.PROMQL_ERROR_RATE_URL }}
+          PROM_BEARER_TOKEN: ${{ secrets.PROM_BEARER_TOKEN }}
+        run: |
+          set -euo pipefail
+          sleep 300
+          payload=$(curl -s -H "Authorization: Bearer ${PROM_BEARER_TOKEN}" "${PROMQL_ERROR_RATE_URL}")
+          rate=$(printf '%s' "$payload" | python -c "import json,sys; p=json.load(sys.stdin); r=p.get('data',{}).get('result',[]); print(r[0].get('value',[0,'1'])[1] if r else '1')")
+          python -c "import sys; rate=float(sys.argv[1]); print(f'Error rate {rate:.4f}'); sys.exit(1 if rate > 0.01 else 0)" "$rate"
+
+      - name: Promote canary to 100%
+        if: success()
+        run: |
+          kubectl -n suraksha patch virtualservice suraksha-api --type merge -p '{"spec":{"http":[{"route":[{"destination":{"host":"api-canary"},"weight":100},{"destination":{"host":"api-stable"},"weight":0}]}]}}'
+
+      - name: Auto-rollback
+        if: failure()
+        run: |
+          kubectl -n suraksha rollout undo deployment/api
+          kubectl -n suraksha rollout undo deployment/fraud
+          kubectl -n suraksha rollout undo deployment/trigger
+          kubectl -n suraksha patch virtualservice suraksha-api --type merge -p '{"spec":{"http":[{"route":[{"destination":{"host":"api-stable"},"weight":100},{"destination":{"host":"api-canary"},"weight":0}]}]}}'
+          exit 1

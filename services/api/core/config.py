@@ -1,6 +1,7 @@
 """
 Application configuration using Pydantic BaseSettings.
 """
+import json
 from typing import Optional
 from pydantic_settings import BaseSettings
 from functools import lru_cache
@@ -66,6 +67,9 @@ class Settings(BaseSettings):
     # Health Probes (PRD §38)
     STARTUP_TIMEOUT_SECONDS: int = 60  # Max seconds the startup probe waits for all init steps
 
+    # API Versioning
+    DEPRECATED_VERSIONS_RAW: str = "{}"  # JSON map: {"v1": "2027-04-01"}
+
     # Claim Processing
     CLAIM_AUTO_APPROVE_WORKER_COUNT: int = 100
     CLAIM_MANUAL_REVIEW_SLA_MINUTES: int = 30
@@ -90,9 +94,30 @@ class Settings(BaseSettings):
     COVERAGE_CAP_MIN: float = 2000.0      # ₹ hard minimum coverage
     COVERAGE_CAP_MAX: float = 20000.0     # ₹ hard maximum coverage
 
+    # Deterministic weekly premium engine
+    WEEKLY_PREMIUM_BASE_RATE_BY_CITY: dict = {
+        "default": 49.0,
+    }
+    WEEKLY_PREMIUM_FLOOR: float = 29.0
+    WEEKLY_PREMIUM_CEILING: float = 149.0
+
+    # Policy lifecycle
+    POLICY_QUOTE_TTL_SECONDS: int = 600
+    POLICY_EVENTS_CHANNEL: str = "policy_events"
+
     class Config:
         env_file = ".env"
         case_sensitive = True
+
+    @property
+    def DEPRECATED_VERSIONS(self) -> dict[str, str]:
+        try:
+            parsed = json.loads(self.DEPRECATED_VERSIONS_RAW)
+            if isinstance(parsed, dict):
+                return {str(k): str(v) for k, v in parsed.items()}
+        except Exception:
+            pass
+        return {}
 
 
 @lru_cache()

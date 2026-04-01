@@ -25,7 +25,7 @@ from core.database import get_db
 from core.rate_limiter import rate_limit
 from core.security import JWTHandler
 from models import Worker, RiskProfile
-from services.pricing_service import compute_weekly_premium
+from services.pricing import compute_weekly_premium
 from services.risk_profile_service import compute_and_save_risk_profile
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,13 @@ class PremiumFactor(BaseModel):
     impact_pct: int
     score:      float
     direction:  str   # "increases" | "decreases" | "neutral"
+
+
+class PremiumDriver(BaseModel):
+    """Plain-language driver for the weekly premium."""
+    factor: str
+    impact: str   # "increases" | "decreases" | "neutral"
+    description: str
 
 
 class PlanQuote(BaseModel):
@@ -61,11 +68,15 @@ class RiskSnapshot(BaseModel):
 
 class PricingQuoteResponse(BaseModel):
     """Full pricing quote returned to the frontend."""
-    worker_id:           str
-    base_rate:           float
-    risk_multiplier:     float
+    premium:           float
+    coverage_limit:    float
+    base_rate:         float
+    risk_multiplier:   float
     exposure_multiplier: float
-    trust_adjustment:    float
+    trust_adjustment:  float
+    top_factors:       list[PremiumDriver]
+    is_estimated:      bool
+    worker_id:           str
     platform_factor:     float
     standard_premium:    float
     base_coverage:       float
@@ -107,7 +118,7 @@ async def _resolve_worker_id(
     description=(
         "Returns computed weekly premiums for all three plan variants along "
         "with the top-3 explainability factors and a full risk-profile snapshot. "
-        "A RiskProfile is auto-computed and persisted if none exists yet."
+        "If a RiskProfile does not exist yet, the quote uses neutral defaults and is flagged as estimated."
     ),
     dependencies=[Depends(rate_limit(per_ip=30, per_identity=20, burst=5))],
 )
@@ -145,6 +156,7 @@ async def get_pricing_quote(
 
     # Coerce nested dicts to Pydantic models for strict response validation
     result["plans"] = {k: PlanQuote(**v) for k, v in result["plans"].items()}
+    result["top_factors"] = [PremiumDriver(**f) for f in result.get("top_factors", [])]
     result["top_3_factors"] = [PremiumFactor(**f) for f in result["top_3_factors"]]
     result["risk_profile_snapshot"] = RiskSnapshot(**result["risk_profile_snapshot"])
 

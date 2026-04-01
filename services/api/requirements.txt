@@ -17,3 +17,14 @@ python-multipart==0.0.6
 alembic==1.13.0
 razorpay>=1.3.0
 networkx>=3.1
+APScheduler==3.10.4
+
+# JWT Authentication (additional)
+PyJWT==2.8.0
+
+# HTTP client for SMS providers
+httpx==0.26.0
+
+# Metrics
+prometheus_client==0.21.0
+

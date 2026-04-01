@@ -28,6 +28,8 @@ from core.database import get_db
 from core.rate_limiter import rate_limit
 from core.redis import get_redis
 from core.security import JWTHandler
+from core.auth_dependencies import require_role, require_reviewer, CurrentUser
+from core.roles import Role
 from models import AuditLog, Claim, Policy, PayoutTransaction, TriggerEvent, Worker
 from services.audit import log_event
 from services.fraud_scoring_service import score_claim
@@ -639,8 +641,8 @@ async def submit_appeal(
     "/admin/claims",
     response_model=ClaimListResponse,
     summary="[Admin] List all claims",
-    description="Returns all claims with optional filters. Requires X-Admin-Token header.",
-    dependencies=[Depends(_require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
+    description="Returns all claims with optional filters. Requires REVIEWER role or higher.",
+    dependencies=[Depends(require_reviewer), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
 )
 async def admin_list_claims(
     page:         int            = Query(1,  ge=1),
@@ -686,14 +688,14 @@ async def admin_list_claims(
     description=(
         "Admin manually resolves a claim in 'in_review' status. "
         "'approve' initiates an immediate payout; 'reject' closes the claim. "
-        "Requires X-Admin-Token header."
+        "Requires REVIEWER role or higher."
     ),
-    dependencies=[Depends(_require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
+    dependencies=[Depends(require_reviewer), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
 )
 async def admin_review_claim(
     claim_id:      str,
     body:          AdminReviewRequest,
-    x_admin_token: Annotated[Optional[str], Header()] = None,
+    current_user:  CurrentUser = Depends(require_reviewer),
     session:       AsyncSession   = Depends(get_db),
     redis:         aioredis.Redis = Depends(get_redis),
 ) -> AdminReviewResponse:

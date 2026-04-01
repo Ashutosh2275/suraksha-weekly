@@ -21,11 +21,15 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 import redis.asyncio as aioredis
 
 from core.config import settings
 from core.database import DatabaseManager, init_db, close_db
+from core.response import CorrelationMiddleware, application_exception_handler
+from middleware import AdminActionLoggerMiddleware, RedisRateLimiterMiddleware, VersionMiddleware
+from jobs.reconciliation import PayoutReconciliationJob
 
 logger = logging.getLogger(__name__)
 
@@ -223,6 +227,7 @@ async def _trigger_event_listener() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage app lifecycle: startup — run subscriber — shutdown."""
+    app.state.config_validated = True
     await init_db()
 
     # Warm up the ML models so the first request doesn't pay the training cost
@@ -256,17 +261,19 @@ async def lifespan(app: FastAPI):
     from core.rate_limiter import _rate_limit_alert_loop
 
     listener_task      = asyncio.create_task(_trigger_event_listener())
-    reconciler_task    = asyncio.create_task(_payout_reconciliation_loop())
+    reconciliation_job = PayoutReconciliationJob()
+    reconciliation_scheduler: AsyncIOScheduler = reconciliation_job.build_scheduler()
+    reconciliation_scheduler.start()
     alert_task         = asyncio.create_task(_rate_limit_alert_loop())
-    logger.info("Redis trigger listener, payout reconciler, and rate-limit alert monitor started.")
+    logger.info("Redis trigger listener, APScheduler payout reconciler, and rate-limit alert monitor started.")
 
     try:
         yield
     finally:
         listener_task.cancel()
-        reconciler_task.cancel()
+        reconciliation_scheduler.shutdown(wait=False)
         alert_task.cancel()
-        for t in (listener_task, reconciler_task, alert_task):
+        for t in (listener_task, alert_task):
             try:
                 await t
             except asyncio.CancelledError:
@@ -333,16 +340,25 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
+    app.state.is_started = False
+    app.state.config_validated = False
 
     # Rate-limit 429 handler — must be registered before middleware
     app.add_exception_handler(RateLimitExceeded, rate_limit_exception_handler)
 
+    # Register exception handlers
+    # Global application exception handler (catches all exceptions)
+    app.add_exception_handler(Exception, application_exception_handler)
+    
     # Standard HTTP error envelope (PRD §40) — error_code + message on every 4xx/5xx
     app.add_exception_handler(HTTPException, _http_exception_handler)
     app.add_exception_handler(RequestValidationError, _validation_exception_handler)
 
     # Performance request-timing middleware (innermost — runs last, measures full request)
     app.add_middleware(PerformanceLoggingMiddleware)
+    
+    # Admin action logger (logs all admin actions to audit table)
+    app.add_middleware(AdminActionLoggerMiddleware)
 
     # CORS middleware
     app.add_middleware(
@@ -359,8 +375,17 @@ def create_app() -> FastAPI:
         allowed_hosts=settings.ALLOWED_HOSTS,
     )
 
-    # Correlation ID (outermost — injected before all other middleware)
+    # Correlation ID (X-Correlation-ID header handling)
+    app.add_middleware(CorrelationMiddleware)
+
+    # Request ID (X-Request-ID header handling - original implementation)
     app.add_middleware(RequestIDMiddleware)
+
+    # Redis-backed global sliding-window rate limiter (middleware-level enforcement)
+    app.add_middleware(RedisRateLimiterMiddleware)
+
+    # URL-path API version middleware (X-API-Version + deprecation headers)
+    app.add_middleware(VersionMiddleware, deprecated_versions=settings.DEPRECATED_VERSIONS)
 
     # Health check endpoint
     @app.get("/health", tags=["health"])
@@ -380,17 +405,8 @@ def _register_routers(app: FastAPI) -> None:
     Args:
         app: FastAPI application instance
     """
-    from routers import auth, policy, claims, payouts, fraud, triggers, admin, pricing
-    from routers import demo as demo_router_mod
-    from routers import health as health_router_mod
+    from routers import internal_probes
+    from routers.v1 import router as v1_router
 
-    app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-    app.include_router(policy.router, prefix="/api/v1/policies", tags=["policies"])
-    app.include_router(pricing.router, prefix="/api/v1/pricing", tags=["pricing"])
-    app.include_router(claims.router, prefix="/api/v1/claims", tags=["claims"])
-    app.include_router(payouts.router, prefix="/api/v1/payouts", tags=["payouts"])
-    app.include_router(fraud.router, prefix="/api/v1/fraud", tags=["fraud"])
-    app.include_router(triggers.router, prefix="/api/v1/triggers", tags=["triggers"])
-    app.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
-    app.include_router(demo_router_mod.router, prefix="/api/v1/admin/demo", tags=["demo"])
-    app.include_router(health_router_mod.router, prefix="", tags=["health"])
+    app.include_router(v1_router)
+    app.include_router(internal_probes.router, prefix="", tags=["internal"])

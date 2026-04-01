@@ -1,0 +1,5493 @@
+{
+  "components": {
+    "schemas": {
+      "ActiveTriggersResponse": {
+        "description": "Wrapper returned by GET /triggers/active.",
+        "properties": {
+          "cache_age_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Age Minutes"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "is_cached": {
+            "default": false,
+            "title": "Is Cached",
+            "type": "boolean"
+          },
+          "triggers": {
+            "items": {
+              "$ref": "#/components/schemas/TriggerEventResponse"
+            },
+            "title": "Triggers",
+            "type": "array"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning"
+          }
+        },
+        "required": [
+          "count",
+          "triggers"
+        ],
+        "title": "ActiveTriggersResponse",
+        "type": "object"
+      },
+      "AdminReviewRequest": {
+        "properties": {
+          "decision": {
+            "description": "'approve' or 'reject'.",
+            "pattern": "^(approve|reject)$",
+            "title": "Decision",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "AdminReviewRequest",
+        "type": "object"
+      },
+      "AdminReviewResponse": {
+        "properties": {
+          "claim_id": {
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "claim_id",
+          "status",
+          "message"
+        ],
+        "title": "AdminReviewResponse",
+        "type": "object"
+      },
+      "AppealRequest": {
+        "properties": {
+          "reason": {
+            "description": "Worker's written justification for the appeal.",
+            "maxLength": 2000,
+            "minLength": 10,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "AppealRequest",
+        "type": "object"
+      },
+      "AppealResponse": {
+        "properties": {
+          "claim_id": {
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "claim_id",
+          "status",
+          "message"
+        ],
+        "title": "AppealResponse",
+        "type": "object"
+      },
+      "ApplyClaimRequest": {
+        "properties": {
+          "trigger_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional active trigger ID. If omitted, the latest eligible active trigger is used.",
+            "title": "Trigger Event Id"
+          }
+        },
+        "title": "ApplyClaimRequest",
+        "type": "object"
+      },
+      "ApplyClaimResponse": {
+        "properties": {
+          "claim": {
+            "$ref": "#/components/schemas/routers__claims__ClaimSummary"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "claim",
+          "message"
+        ],
+        "title": "ApplyClaimResponse",
+        "type": "object"
+      },
+      "AuditLogEntry": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor": {
+            "title": "Actor",
+            "type": "string"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "entity_id": {
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "entity_type": {
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "entity_type",
+          "entity_id",
+          "action",
+          "actor",
+          "timestamp"
+        ],
+        "title": "AuditLogEntry",
+        "type": "object"
+      },
+      "AuditLogListResponse": {
+        "properties": {
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "logs": {
+            "items": {
+              "$ref": "#/components/schemas/AuditLogSummary"
+            },
+            "title": "Logs",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "limit",
+          "logs"
+        ],
+        "title": "AuditLogListResponse",
+        "type": "object"
+      },
+      "AuditLogSummary": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor": {
+            "title": "Actor",
+            "type": "string"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "entity_id": {
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "entity_type": {
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "timestamp": {
+            "title": "Timestamp",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "entity_type",
+          "entity_id",
+          "action",
+          "actor",
+          "payload",
+          "timestamp"
+        ],
+        "title": "AuditLogSummary",
+        "type": "object"
+      },
+      "ClaimBreakdown": {
+        "properties": {
+          "auto_approved": {
+            "title": "Auto Approved",
+            "type": "integer"
+          },
+          "blocked": {
+            "title": "Blocked",
+            "type": "integer"
+          },
+          "in_review": {
+            "title": "In Review",
+            "type": "integer"
+          },
+          "initiated": {
+            "title": "Initiated",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "auto_approved",
+          "in_review",
+          "blocked",
+          "initiated",
+          "total"
+        ],
+        "title": "ClaimBreakdown",
+        "type": "object"
+      },
+      "ClaimDetail": {
+        "description": "Full claim detail including timeline and payout info.",
+        "properties": {
+          "confidence_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence Score"
+          },
+          "fraud_reason_tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fraud Reason Tags",
+            "type": "array"
+          },
+          "fraud_score": {
+            "title": "Fraud Score",
+            "type": "number"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "initiated_at": {
+            "title": "Initiated At",
+            "type": "string"
+          },
+          "payout": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/routers__claims__PayoutDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payout_amount": {
+            "title": "Payout Amount",
+            "type": "number"
+          },
+          "plan_variant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Variant"
+          },
+          "policy_id": {
+            "title": "Policy Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "timeline": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineEvent"
+            },
+            "title": "Timeline",
+            "type": "array"
+          },
+          "trigger_event_id": {
+            "title": "Trigger Event Id",
+            "type": "string"
+          },
+          "trigger_threshold": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Threshold"
+          },
+          "trigger_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Type"
+          },
+          "trigger_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Value"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "trigger_type",
+          "zone",
+          "plan_variant",
+          "payout_amount",
+          "fraud_score",
+          "fraud_reason_tags",
+          "initiated_at",
+          "policy_id",
+          "trigger_event_id",
+          "trigger_value",
+          "trigger_threshold",
+          "confidence_score",
+          "payout",
+          "timeline"
+        ],
+        "title": "ClaimDetail",
+        "type": "object"
+      },
+      "ClaimListResponse": {
+        "properties": {
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/routers__claims__ClaimSummary"
+            },
+            "title": "Claims",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "limit",
+          "claims"
+        ],
+        "title": "ClaimListResponse",
+        "type": "object"
+      },
+      "DemoDisruptionRequest": {
+        "properties": {
+          "city": {
+            "default": "Bengaluru",
+            "title": "City",
+            "type": "string"
+          },
+          "intensity_level": {
+            "default": "moderate",
+            "enum": [
+              "moderate",
+              "severe",
+              "extreme"
+            ],
+            "title": "Intensity Level",
+            "type": "string"
+          },
+          "trigger_type": {
+            "enum": [
+              "HeavyRain",
+              "ExtremeHeat",
+              "SeverePollution",
+              "LocalRestriction",
+              "PlatformOutage"
+            ],
+            "title": "Trigger Type",
+            "type": "string"
+          },
+          "zone": {
+            "title": "Zone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "trigger_type",
+          "zone"
+        ],
+        "title": "DemoDisruptionRequest",
+        "type": "object"
+      },
+      "DemoDisruptionResponse": {
+        "properties": {
+          "breakdown": {
+            "$ref": "#/components/schemas/ClaimBreakdown"
+          },
+          "city": {
+            "title": "City",
+            "type": "string"
+          },
+          "claims_auto_approved": {
+            "title": "Claims Auto Approved",
+            "type": "integer"
+          },
+          "claims_flagged": {
+            "title": "Claims Flagged",
+            "type": "integer"
+          },
+          "claims_initiated": {
+            "title": "Claims Initiated",
+            "type": "integer"
+          },
+          "confidence_score": {
+            "title": "Confidence Score",
+            "type": "number"
+          },
+          "intensity_description": {
+            "title": "Intensity Description",
+            "type": "string"
+          },
+          "intensity_level": {
+            "title": "Intensity Level",
+            "type": "string"
+          },
+          "measured_value": {
+            "title": "Measured Value",
+            "type": "number"
+          },
+          "orchestration_ms": {
+            "title": "Orchestration Ms",
+            "type": "integer"
+          },
+          "threshold_value": {
+            "title": "Threshold Value",
+            "type": "number"
+          },
+          "total_payout_initiated": {
+            "title": "Total Payout Initiated",
+            "type": "number"
+          },
+          "trigger_id": {
+            "title": "Trigger Id",
+            "type": "string"
+          },
+          "trigger_type": {
+            "title": "Trigger Type",
+            "type": "string"
+          },
+          "triggered_at": {
+            "title": "Triggered At",
+            "type": "string"
+          },
+          "zone": {
+            "title": "Zone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "trigger_id",
+          "trigger_type",
+          "zone",
+          "city",
+          "intensity_level",
+          "intensity_description",
+          "measured_value",
+          "threshold_value",
+          "confidence_score",
+          "claims_initiated",
+          "claims_auto_approved",
+          "claims_flagged",
+          "total_payout_initiated",
+          "breakdown",
+          "orchestration_ms",
+          "triggered_at"
+        ],
+        "title": "DemoDisruptionResponse",
+        "type": "object"
+      },
+      "DemoResetResponse": {
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "DemoResetResponse",
+        "type": "object"
+      },
+      "DemoStatusResponse": {
+        "properties": {
+          "active_policies": {
+            "title": "Active Policies",
+            "type": "integer"
+          },
+          "blocked_claims": {
+            "title": "Blocked Claims",
+            "type": "integer"
+          },
+          "catastrophe_mode_active": {
+            "title": "Catastrophe Mode Active",
+            "type": "boolean"
+          },
+          "paid_claims": {
+            "title": "Paid Claims",
+            "type": "integer"
+          },
+          "total_claims": {
+            "title": "Total Claims",
+            "type": "integer"
+          },
+          "total_payout_inr": {
+            "title": "Total Payout Inr",
+            "type": "number"
+          }
+        },
+        "required": [
+          "active_policies",
+          "total_claims",
+          "paid_claims",
+          "blocked_claims",
+          "total_payout_inr",
+          "catastrophe_mode_active"
+        ],
+        "title": "DemoStatusResponse",
+        "type": "object"
+      },
+      "FraudAssessmentDetail": {
+        "properties": {
+          "claim_id": {
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "decision": {
+            "title": "Decision",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "reason_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reason Codes",
+            "type": "array"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
+          },
+          "reviewed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed By"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "claim_id",
+          "score",
+          "decision",
+          "reason_codes",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "FraudAssessmentDetail",
+        "type": "object"
+      },
+      "FraudClusterSummary": {
+        "properties": {
+          "auto_resolved": {
+            "title": "Auto Resolved",
+            "type": "boolean"
+          },
+          "cluster_type": {
+            "title": "Cluster Type",
+            "type": "string"
+          },
+          "detected_at": {
+            "title": "Detected At",
+            "type": "string"
+          },
+          "flagged_for_kyc": {
+            "title": "Flagged For Kyc",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "link_node": {
+            "title": "Link Node",
+            "type": "string"
+          },
+          "member_count": {
+            "title": "Member Count",
+            "type": "integer"
+          },
+          "member_worker_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Member Worker Ids",
+            "type": "array"
+          },
+          "risk_level": {
+            "title": "Risk Level",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "cluster_type",
+          "link_node",
+          "member_count",
+          "member_worker_ids",
+          "risk_level",
+          "flagged_for_kyc",
+          "auto_resolved",
+          "detected_at"
+        ],
+        "title": "FraudClusterSummary",
+        "type": "object"
+      },
+      "FraudClustersResponse": {
+        "properties": {
+          "cache_age_minutes": {
+            "default": 0.0,
+            "title": "Cache Age Minutes",
+            "type": "number"
+          },
+          "clusters": {
+            "items": {
+              "$ref": "#/components/schemas/FraudClusterSummary"
+            },
+            "title": "Clusters",
+            "type": "array"
+          },
+          "is_cached": {
+            "default": false,
+            "title": "Is Cached",
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "clusters"
+        ],
+        "title": "FraudClustersResponse",
+        "type": "object"
+      },
+      "GraphAnalysisResponse": {
+        "properties": {
+          "claims_tagged": {
+            "title": "Claims Tagged",
+            "type": "integer"
+          },
+          "device_clusters_found": {
+            "title": "Device Clusters Found",
+            "type": "integer"
+          },
+          "new_clusters_persisted": {
+            "title": "New Clusters Persisted",
+            "type": "integer"
+          },
+          "zone_clusters_found": {
+            "title": "Zone Clusters Found",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "device_clusters_found",
+          "zone_clusters_found",
+          "new_clusters_persisted",
+          "claims_tagged"
+        ],
+        "title": "GraphAnalysisResponse",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ModelStatusResponse": {
+        "properties": {
+          "last_precision": {
+            "title": "Last Precision",
+            "type": "number"
+          },
+          "model_loaded": {
+            "title": "Model Loaded",
+            "type": "boolean"
+          },
+          "model_path": {
+            "title": "Model Path",
+            "type": "string"
+          },
+          "precision_floor": {
+            "title": "Precision Floor",
+            "type": "number"
+          },
+          "rule_only_mode": {
+            "title": "Rule Only Mode",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "rule_only_mode",
+          "last_precision",
+          "precision_floor",
+          "model_path",
+          "model_loaded"
+        ],
+        "title": "ModelStatusResponse",
+        "type": "object"
+      },
+      "OTPRequestPayload": {
+        "description": "Request OTP payload.",
+        "properties": {
+          "phone": {
+            "pattern": "^\\+91[6-9]\\d{9}$",
+            "title": "Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "phone"
+        ],
+        "title": "OTPRequestPayload",
+        "type": "object"
+      },
+      "OTPVerifyPayload": {
+        "description": "Verify OTP payload.",
+        "properties": {
+          "avg_daily_hours": {
+            "default": 8.0,
+            "maximum": 24.0,
+            "minimum": 0.0,
+            "title": "Avg Daily Hours",
+            "type": "number"
+          },
+          "avg_weekly_earnings": {
+            "default": 5000.0,
+            "minimum": 0.0,
+            "title": "Avg Weekly Earnings",
+            "type": "number"
+          },
+          "city": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "City",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "otp": {
+            "maxLength": 6,
+            "minLength": 4,
+            "title": "Otp",
+            "type": "string"
+          },
+          "phone": {
+            "pattern": "^\\+91[6-9]\\d{9}$",
+            "title": "Phone",
+            "type": "string"
+          },
+          "platform_type": {
+            "pattern": "^(Zomato|Swiggy)$",
+            "title": "Platform Type",
+            "type": "string"
+          },
+          "service_zones": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Service Zones",
+            "type": "array"
+          }
+        },
+        "required": [
+          "phone",
+          "otp",
+          "name",
+          "city",
+          "platform_type"
+        ],
+        "title": "OTPVerifyPayload",
+        "type": "object"
+      },
+      "PayoutListResponse": {
+        "properties": {
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "payouts": {
+            "items": {
+              "$ref": "#/components/schemas/PayoutSummary"
+            },
+            "title": "Payouts",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "limit",
+          "payouts"
+        ],
+        "title": "PayoutListResponse",
+        "type": "object"
+      },
+      "PayoutSummary": {
+        "description": "Lightweight row for list views.",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "number"
+          },
+          "claim_id": {
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed At"
+          },
+          "gateway": {
+            "title": "Gateway",
+            "type": "string"
+          },
+          "gateway_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gateway Ref"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "initiated_at": {
+            "title": "Initiated At",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "trigger_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Type"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone"
+          }
+        },
+        "required": [
+          "id",
+          "claim_id",
+          "amount",
+          "gateway",
+          "gateway_ref",
+          "status",
+          "trigger_type",
+          "zone",
+          "initiated_at",
+          "confirmed_at"
+        ],
+        "title": "PayoutSummary",
+        "type": "object"
+      },
+      "PlanQuote": {
+        "description": "Quote for a single plan variant.",
+        "properties": {
+          "coverage_cap": {
+            "title": "Coverage Cap",
+            "type": "number"
+          },
+          "coverage_mult": {
+            "title": "Coverage Mult",
+            "type": "number"
+          },
+          "plan_variant": {
+            "title": "Plan Variant",
+            "type": "string"
+          },
+          "premium_mult": {
+            "title": "Premium Mult",
+            "type": "number"
+          },
+          "weekly_premium": {
+            "title": "Weekly Premium",
+            "type": "number"
+          }
+        },
+        "required": [
+          "plan_variant",
+          "weekly_premium",
+          "coverage_cap",
+          "premium_mult",
+          "coverage_mult"
+        ],
+        "title": "PlanQuote",
+        "type": "object"
+      },
+      "PolicyDetail": {
+        "properties": {
+          "coverage_cap": {
+            "title": "Coverage Cap",
+            "type": "number"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "end_date": {
+            "format": "date-time",
+            "title": "End Date",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "plan_variant": {
+            "title": "Plan Variant",
+            "type": "string"
+          },
+          "renewal_count": {
+            "title": "Renewal Count",
+            "type": "integer"
+          },
+          "start_date": {
+            "format": "date-time",
+            "title": "Start Date",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "waiting_period_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waiting Period Until"
+          },
+          "weekly_premium": {
+            "title": "Weekly Premium",
+            "type": "number"
+          },
+          "worker_id": {
+            "title": "Worker Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "worker_id",
+          "plan_variant",
+          "status",
+          "weekly_premium",
+          "coverage_cap",
+          "start_date",
+          "end_date",
+          "renewal_count",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PolicyDetail",
+        "type": "object"
+      },
+      "PolicyLifecycleResponse": {
+        "properties": {
+          "coverage_cap": {
+            "minimum": 0.0,
+            "title": "Coverage Cap",
+            "type": "number"
+          },
+          "coverage_cap_max": {
+            "default": 0.0,
+            "title": "Coverage Cap Max",
+            "type": "number"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "payout_priority": {
+            "default": "standard",
+            "title": "Payout Priority",
+            "type": "string"
+          },
+          "pending_downgrade_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pending Downgrade To"
+          },
+          "plan_triggers": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Plan Triggers",
+            "type": "array"
+          },
+          "plan_variant": {
+            "pattern": "^(basic|standard|pro)$",
+            "title": "Plan Variant",
+            "type": "string"
+          },
+          "priority_fraud_review": {
+            "default": false,
+            "title": "Priority Fraud Review",
+            "type": "boolean"
+          },
+          "quote_cached": {
+            "default": false,
+            "title": "Quote Cached",
+            "type": "boolean"
+          },
+          "quote_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote Expires At"
+          },
+          "quote_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote Id"
+          },
+          "renewal_count": {
+            "title": "Renewal Count",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "trust_premium_multiplier": {
+            "default": 1.0,
+            "title": "Trust Premium Multiplier",
+            "type": "number"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "waiting_period_until": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waiting Period Until"
+          },
+          "weekly_premium": {
+            "minimum": 0.0,
+            "title": "Weekly Premium",
+            "type": "number"
+          },
+          "worker_id": {
+            "title": "Worker Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plan_variant",
+          "weekly_premium",
+          "coverage_cap",
+          "id",
+          "worker_id",
+          "status",
+          "renewal_count",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PolicyLifecycleResponse",
+        "type": "object"
+      },
+      "PolicyPurchaseRequest": {
+        "properties": {
+          "plan_variant": {
+            "pattern": "^(basic|standard|pro)$",
+            "title": "Plan Variant",
+            "type": "string"
+          },
+          "quote_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote Id"
+          },
+          "worker_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Worker Id"
+          }
+        },
+        "required": [
+          "plan_variant"
+        ],
+        "title": "PolicyPurchaseRequest",
+        "type": "object"
+      },
+      "PolicyQuoteRequest": {
+        "properties": {
+          "plan_variant": {
+            "pattern": "^(basic|standard|pro)$",
+            "title": "Plan Variant",
+            "type": "string"
+          },
+          "worker_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Worker Id"
+          }
+        },
+        "required": [
+          "plan_variant"
+        ],
+        "title": "PolicyQuoteRequest",
+        "type": "object"
+      },
+      "PolicyQuoteResponse": {
+        "properties": {
+          "base_rate": {
+            "title": "Base Rate",
+            "type": "number"
+          },
+          "coverage_cap": {
+            "title": "Coverage Cap",
+            "type": "number"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "exposure_multiplier": {
+            "title": "Exposure Multiplier",
+            "type": "number"
+          },
+          "is_cached": {
+            "default": false,
+            "title": "Is Cached",
+            "type": "boolean"
+          },
+          "is_estimated": {
+            "title": "Is Estimated",
+            "type": "boolean"
+          },
+          "plan_variant": {
+            "title": "Plan Variant",
+            "type": "string"
+          },
+          "quote_id": {
+            "title": "Quote Id",
+            "type": "string"
+          },
+          "risk_multiplier": {
+            "title": "Risk Multiplier",
+            "type": "number"
+          },
+          "top_factors": {
+            "items": {
+              "$ref": "#/components/schemas/routers__policies__PremiumDriver"
+            },
+            "title": "Top Factors",
+            "type": "array"
+          },
+          "trust_adjustment": {
+            "title": "Trust Adjustment",
+            "type": "number"
+          },
+          "trust_tier": {
+            "title": "Trust Tier",
+            "type": "string"
+          },
+          "ttl_seconds": {
+            "title": "Ttl Seconds",
+            "type": "integer"
+          },
+          "weekly_premium": {
+            "title": "Weekly Premium",
+            "type": "number"
+          },
+          "worker_id": {
+            "title": "Worker Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quote_id",
+          "worker_id",
+          "plan_variant",
+          "weekly_premium",
+          "coverage_cap",
+          "base_rate",
+          "risk_multiplier",
+          "exposure_multiplier",
+          "trust_adjustment",
+          "top_factors",
+          "trust_tier",
+          "is_estimated",
+          "expires_at",
+          "ttl_seconds"
+        ],
+        "title": "PolicyQuoteResponse",
+        "type": "object"
+      },
+      "PremiumFactor": {
+        "description": "One human-readable factor driving the premium.",
+        "properties": {
+          "direction": {
+            "title": "Direction",
+            "type": "string"
+          },
+          "impact_pct": {
+            "title": "Impact Pct",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "label",
+          "impact_pct",
+          "score",
+          "direction"
+        ],
+        "title": "PremiumFactor",
+        "type": "object"
+      },
+      "PricingQuoteResponse": {
+        "description": "Full pricing quote returned to the frontend.",
+        "properties": {
+          "base_coverage": {
+            "title": "Base Coverage",
+            "type": "number"
+          },
+          "base_rate": {
+            "title": "Base Rate",
+            "type": "number"
+          },
+          "coverage_limit": {
+            "title": "Coverage Limit",
+            "type": "number"
+          },
+          "exposure_multiplier": {
+            "title": "Exposure Multiplier",
+            "type": "number"
+          },
+          "is_estimated": {
+            "title": "Is Estimated",
+            "type": "boolean"
+          },
+          "plans": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PlanQuote"
+            },
+            "title": "Plans",
+            "type": "object"
+          },
+          "platform_factor": {
+            "title": "Platform Factor",
+            "type": "number"
+          },
+          "premium": {
+            "title": "Premium",
+            "type": "number"
+          },
+          "risk_multiplier": {
+            "title": "Risk Multiplier",
+            "type": "number"
+          },
+          "risk_profile_snapshot": {
+            "$ref": "#/components/schemas/RiskSnapshot"
+          },
+          "standard_premium": {
+            "title": "Standard Premium",
+            "type": "number"
+          },
+          "top_3_factors": {
+            "items": {
+              "$ref": "#/components/schemas/PremiumFactor"
+            },
+            "title": "Top 3 Factors",
+            "type": "array"
+          },
+          "top_factors": {
+            "items": {
+              "$ref": "#/components/schemas/routers__pricing__PremiumDriver"
+            },
+            "title": "Top Factors",
+            "type": "array"
+          },
+          "trust_adjustment": {
+            "title": "Trust Adjustment",
+            "type": "number"
+          },
+          "worker_id": {
+            "title": "Worker Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "premium",
+          "coverage_limit",
+          "base_rate",
+          "risk_multiplier",
+          "exposure_multiplier",
+          "trust_adjustment",
+          "top_factors",
+          "is_estimated",
+          "worker_id",
+          "platform_factor",
+          "standard_premium",
+          "base_coverage",
+          "plans",
+          "top_3_factors",
+          "risk_profile_snapshot"
+        ],
+        "title": "PricingQuoteResponse",
+        "type": "object"
+      },
+      "RetryResponse": {
+        "properties": {
+          "gateway_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gateway Ref"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "payout_id": {
+            "title": "Payout Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payout_id",
+          "status",
+          "gateway_ref",
+          "message"
+        ],
+        "title": "RetryResponse",
+        "type": "object"
+      },
+      "ReviewDecisionRequest": {
+        "properties": {
+          "decision": {
+            "pattern": "^(APPROVE|REJECT)$",
+            "title": "Decision",
+            "type": "string"
+          },
+          "reviewer_notes": {
+            "maxLength": 4000,
+            "minLength": 20,
+            "title": "Reviewer Notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision",
+          "reviewer_notes"
+        ],
+        "title": "ReviewDecisionRequest",
+        "type": "object"
+      },
+      "ReviewMetricsResponse": {
+        "properties": {
+          "avg_wait_time_minutes": {
+            "title": "Avg Wait Time Minutes",
+            "type": "number"
+          },
+          "decisions_per_reviewer": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Decisions Per Reviewer",
+            "type": "object"
+          },
+          "queue_depth": {
+            "title": "Queue Depth",
+            "type": "integer"
+          },
+          "sla_breach_count_today": {
+            "title": "Sla Breach Count Today",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "queue_depth",
+          "avg_wait_time_minutes",
+          "sla_breach_count_today",
+          "decisions_per_reviewer"
+        ],
+        "title": "ReviewMetricsResponse",
+        "type": "object"
+      },
+      "ReviewQueueDetail": {
+        "properties": {
+          "audit_logs": {
+            "items": {
+              "$ref": "#/components/schemas/AuditLogEntry"
+            },
+            "title": "Audit Logs",
+            "type": "array"
+          },
+          "claim": {
+            "$ref": "#/components/schemas/routers__review_queue__ClaimSummary"
+          },
+          "decision_trace": {
+            "additionalProperties": true,
+            "title": "Decision Trace",
+            "type": "object"
+          },
+          "fraud_assessment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FraudAssessmentDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "policy": {
+            "$ref": "#/components/schemas/PolicyDetail"
+          },
+          "sla_deadline": {
+            "format": "date-time",
+            "title": "Sla Deadline",
+            "type": "string"
+          },
+          "trigger_event": {
+            "$ref": "#/components/schemas/TriggerEventDetail"
+          },
+          "worker": {
+            "$ref": "#/components/schemas/WorkerSummary"
+          }
+        },
+        "required": [
+          "claim",
+          "worker",
+          "policy",
+          "trigger_event",
+          "sla_deadline"
+        ],
+        "title": "ReviewQueueDetail",
+        "type": "object"
+      },
+      "ReviewQueueItem": {
+        "properties": {
+          "claim": {
+            "$ref": "#/components/schemas/routers__review_queue__ClaimSummary"
+          },
+          "fraud_score": {
+            "title": "Fraud Score",
+            "type": "number"
+          },
+          "reason_tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reason Tags",
+            "type": "array"
+          },
+          "risk_tier": {
+            "title": "Risk Tier",
+            "type": "string"
+          },
+          "sla_deadline": {
+            "format": "date-time",
+            "title": "Sla Deadline",
+            "type": "string"
+          },
+          "worker": {
+            "$ref": "#/components/schemas/WorkerSummary"
+          }
+        },
+        "required": [
+          "claim",
+          "fraud_score",
+          "risk_tier",
+          "reason_tags",
+          "sla_deadline",
+          "worker"
+        ],
+        "title": "ReviewQueueItem",
+        "type": "object"
+      },
+      "ReviewQueueListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReviewQueueItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "page",
+          "limit",
+          "items"
+        ],
+        "title": "ReviewQueueListResponse",
+        "type": "object"
+      },
+      "RiskSnapshot": {
+        "properties": {
+          "disruption_frequency_score": {
+            "title": "Disruption Frequency Score",
+            "type": "number"
+          },
+          "hour_exposure_score": {
+            "title": "Hour Exposure Score",
+            "type": "number"
+          },
+          "location_risk_index": {
+            "title": "Location Risk Index",
+            "type": "number"
+          },
+          "platform_segment_factor": {
+            "title": "Platform Segment Factor",
+            "type": "number"
+          },
+          "trust_tier": {
+            "title": "Trust Tier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location_risk_index",
+          "disruption_frequency_score",
+          "hour_exposure_score",
+          "platform_segment_factor",
+          "trust_tier"
+        ],
+        "title": "RiskSnapshot",
+        "type": "object"
+      },
+      "SimulateRequest": {
+        "description": "Body for POST /triggers/simulate.",
+        "properties": {
+          "city": {
+            "description": "City name, e.g. 'Mumbai'",
+            "title": "City",
+            "type": "string"
+          },
+          "trigger_type": {
+            "description": "Type of trigger to simulate. One of: HeavyRain, ExtremeHeat, SeverePollution, LocalRestriction, PlatformOutage.",
+            "title": "Trigger Type",
+            "type": "string"
+          },
+          "value": {
+            "description": "Measured value that breaches the threshold",
+            "exclusiveMinimum": 0.0,
+            "title": "Value",
+            "type": "number"
+          },
+          "zone": {
+            "description": "Delivery zone name, e.g. 'Andheri'",
+            "title": "Zone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "trigger_type",
+          "zone",
+          "city",
+          "value"
+        ],
+        "title": "SimulateRequest",
+        "type": "object"
+      },
+      "SimulateResponse": {
+        "description": "Response from POST /triggers/simulate.",
+        "properties": {
+          "city": {
+            "title": "City",
+            "type": "string"
+          },
+          "confidence_score": {
+            "title": "Confidence Score",
+            "type": "number"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "redis_receivers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Redis Receivers"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "threshold": {
+            "title": "Threshold",
+            "type": "number"
+          },
+          "trigger_id": {
+            "title": "Trigger Id",
+            "type": "string"
+          },
+          "trigger_type": {
+            "title": "Trigger Type",
+            "type": "string"
+          },
+          "triggered_at": {
+            "title": "Triggered At",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          },
+          "zone": {
+            "title": "Zone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "trigger_id",
+          "trigger_type",
+          "zone",
+          "city",
+          "value",
+          "threshold",
+          "confidence_score",
+          "status",
+          "triggered_at",
+          "message"
+        ],
+        "title": "SimulateResponse",
+        "type": "object"
+      },
+      "SimulationRunResponse": {
+        "properties": {
+          "cache_key": {
+            "title": "Cache Key",
+            "type": "string"
+          },
+          "cached": {
+            "default": false,
+            "title": "Cached",
+            "type": "boolean"
+          },
+          "city_segment_breakdown": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "City Segment Breakdown",
+            "type": "array"
+          },
+          "combined_ratio_pct": {
+            "title": "Combined Ratio Pct",
+            "type": "number"
+          },
+          "contribution_margin_pct": {
+            "title": "Contribution Margin Pct",
+            "type": "number"
+          },
+          "exposure_at_risk_inr": {
+            "title": "Exposure At Risk Inr",
+            "type": "number"
+          },
+          "gross_loss_ratio_pct": {
+            "title": "Gross Loss Ratio Pct",
+            "type": "number"
+          },
+          "inputs": {
+            "additionalProperties": true,
+            "title": "Inputs",
+            "type": "object"
+          },
+          "is_sustainable": {
+            "title": "Is Sustainable",
+            "type": "boolean"
+          },
+          "required_premium_adjustment_pct": {
+            "title": "Required Premium Adjustment Pct",
+            "type": "number"
+          },
+          "scenario_name": {
+            "title": "Scenario Name",
+            "type": "string"
+          },
+          "simulation_timestamp": {
+            "title": "Simulation Timestamp",
+            "type": "string"
+          },
+          "sustainability_issues": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sustainability Issues",
+            "type": "array"
+          },
+          "weekly_breakdown": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Weekly Breakdown",
+            "type": "array"
+          }
+        },
+        "required": [
+          "scenario_name",
+          "inputs",
+          "gross_loss_ratio_pct",
+          "combined_ratio_pct",
+          "contribution_margin_pct",
+          "required_premium_adjustment_pct",
+          "exposure_at_risk_inr",
+          "weekly_breakdown",
+          "city_segment_breakdown",
+          "is_sustainable",
+          "sustainability_issues",
+          "simulation_timestamp",
+          "cache_key"
+        ],
+        "title": "SimulationRunResponse",
+        "type": "object"
+      },
+      "TimelineEvent": {
+        "description": "One entry in a claim's audit timeline.",
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "actor": {
+            "title": "Actor",
+            "type": "string"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "timestamp": {
+            "title": "Timestamp",
+            "type": "string"
+          }
+        },
+        "required": [
+          "timestamp",
+          "action",
+          "actor"
+        ],
+        "title": "TimelineEvent",
+        "type": "object"
+      },
+      "TriggerEventDetail": {
+        "properties": {
+          "audit_snapshot": {
+            "additionalProperties": true,
+            "title": "Audit Snapshot",
+            "type": "object"
+          },
+          "confidence_score": {
+            "title": "Confidence Score",
+            "type": "number"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "threshold": {
+            "title": "Threshold",
+            "type": "number"
+          },
+          "triggered_at": {
+            "format": "date-time",
+            "title": "Triggered At",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          },
+          "zone": {
+            "title": "Zone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "zone",
+          "value",
+          "threshold",
+          "confidence_score",
+          "sources",
+          "status",
+          "triggered_at",
+          "audit_snapshot",
+          "created_at"
+        ],
+        "title": "TriggerEventDetail",
+        "type": "object"
+      },
+      "TriggerEventResponse": {
+        "description": "Serialised TriggerEvent row for API consumers.",
+        "properties": {
+          "audit_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Snapshot"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "confidence_score": {
+            "title": "Confidence Score",
+            "type": "number"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "payout_multiplier": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payout Multiplier"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "threshold": {
+            "title": "Threshold",
+            "type": "number"
+          },
+          "triggered_at": {
+            "title": "Triggered At",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          },
+          "zone": {
+            "title": "Zone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "zone",
+          "value",
+          "threshold",
+          "confidence_score",
+          "sources",
+          "status",
+          "triggered_at"
+        ],
+        "title": "TriggerEventResponse",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "WorkerSummary": {
+        "properties": {
+          "city": {
+            "title": "City",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "service_zones": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Service Zones",
+            "type": "array"
+          },
+          "trust_score": {
+            "title": "Trust Score",
+            "type": "number"
+          },
+          "trust_tier": {
+            "title": "Trust Tier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "phone",
+          "city",
+          "trust_score",
+          "trust_tier"
+        ],
+        "title": "WorkerSummary",
+        "type": "object"
+      },
+      "ZoneListResponse": {
+        "properties": {
+          "cities": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Cities",
+            "type": "object"
+          },
+          "total_zones": {
+            "title": "Total Zones",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cities",
+          "total_zones"
+        ],
+        "title": "ZoneListResponse",
+        "type": "object"
+      },
+      "routers__claims__ClaimSummary": {
+        "description": "Lightweight claim row for list views.",
+        "properties": {
+          "fraud_reason_tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fraud Reason Tags",
+            "type": "array"
+          },
+          "fraud_score": {
+            "title": "Fraud Score",
+            "type": "number"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "initiated_at": {
+            "title": "Initiated At",
+            "type": "string"
+          },
+          "payout_amount": {
+            "title": "Payout Amount",
+            "type": "number"
+          },
+          "plan_variant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Variant"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "trigger_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Type"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "trigger_type",
+          "zone",
+          "plan_variant",
+          "payout_amount",
+          "fraud_score",
+          "fraud_reason_tags",
+          "initiated_at"
+        ],
+        "title": "ClaimSummary",
+        "type": "object"
+      },
+      "routers__claims__PayoutDetail": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "number"
+          },
+          "gateway": {
+            "title": "Gateway",
+            "type": "string"
+          },
+          "gateway_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gateway Ref"
+          },
+          "initiated_at": {
+            "title": "Initiated At",
+            "type": "string"
+          },
+          "payout_id": {
+            "title": "Payout Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payout_id",
+          "amount",
+          "gateway",
+          "gateway_ref",
+          "status",
+          "initiated_at"
+        ],
+        "title": "PayoutDetail",
+        "type": "object"
+      },
+      "routers__payouts__PayoutDetail": {
+        "description": "Full payout detail including computation breakdown and claim context.",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "number"
+          },
+          "avg_hourly_earnings": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Hourly Earnings"
+          },
+          "base_payout": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Payout"
+          },
+          "capped_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capped By"
+          },
+          "claim_id": {
+            "title": "Claim Id",
+            "type": "string"
+          },
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed At"
+          },
+          "coverage_cap": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Cap"
+          },
+          "gateway": {
+            "title": "Gateway",
+            "type": "string"
+          },
+          "gateway_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gateway Ref"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "idempotency_key": {
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "initiated_at": {
+            "title": "Initiated At",
+            "type": "string"
+          },
+          "lost_covered_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lost Covered Hours"
+          },
+          "severity_factor": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Severity Factor"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "trigger_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Type"
+          },
+          "weekly_already_paid": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Already Paid"
+          },
+          "weekly_cap": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Cap"
+          },
+          "worker_id": {
+            "title": "Worker Id",
+            "type": "string"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone"
+          }
+        },
+        "required": [
+          "id",
+          "claim_id",
+          "amount",
+          "gateway",
+          "gateway_ref",
+          "status",
+          "trigger_type",
+          "zone",
+          "initiated_at",
+          "confirmed_at",
+          "worker_id",
+          "idempotency_key"
+        ],
+        "title": "PayoutDetail",
+        "type": "object"
+      },
+      "routers__policies__PremiumDriver": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "factor": {
+            "title": "Factor",
+            "type": "string"
+          },
+          "impact": {
+            "title": "Impact",
+            "type": "string"
+          }
+        },
+        "required": [
+          "factor",
+          "impact",
+          "description"
+        ],
+        "title": "PremiumDriver",
+        "type": "object"
+      },
+      "routers__pricing__PremiumDriver": {
+        "description": "Plain-language driver for the weekly premium.",
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "factor": {
+            "title": "Factor",
+            "type": "string"
+          },
+          "impact": {
+            "title": "Impact",
+            "type": "string"
+          }
+        },
+        "required": [
+          "factor",
+          "impact",
+          "description"
+        ],
+        "title": "PremiumDriver",
+        "type": "object"
+      },
+      "routers__review_queue__ClaimSummary": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "initiated_at": {
+            "format": "date-time",
+            "title": "Initiated At",
+            "type": "string"
+          },
+          "payout_amount": {
+            "default": 0.0,
+            "title": "Payout Amount",
+            "type": "number"
+          },
+          "plan_variant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Variant"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "trigger_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trigger Type"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "initiated_at"
+        ],
+        "title": "ClaimSummary",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "AI Parametric Income Insurance Platform",
+    "title": "Suraksha Weekly API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/admin/audit-logs": {
+      "get": {
+        "operationId": "list_audit_logs_api_v1_admin_audit_logs_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "entity_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entity Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "action",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditLogListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Admin] List audit logs",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/dashboard": {
+      "get": {
+        "operationId": "get_dashboard_api_v1_admin_dashboard_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Admin] Dashboard summary",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/demo/reset": {
+      "post": {
+        "operationId": "demo_reset_api_v1_admin_demo_reset_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-admin-token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoResetResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Demo] Reset to deterministic Phase 2 demo state",
+        "tags": [
+          "demo",
+          "demo"
+        ]
+      }
+    },
+    "/api/v1/admin/demo/simulate-disruption": {
+      "post": {
+        "description": "Creates a realistic TriggerEvent for the given zone and intensity level, then synchronously runs the full claim-orchestration pipeline for all active policies in that zone. Returns rich results including claim counts and total payout initiated. Idempotent: existing claims for the same trigger are skipped.",
+        "operationId": "simulate_disruption_api_v1_admin_demo_simulate_disruption_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-admin-token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemoDisruptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoDisruptionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Demo] Fire a parametric trigger and run full claim orchestration",
+        "tags": [
+          "demo",
+          "demo"
+        ]
+      }
+    },
+    "/api/v1/admin/demo/status": {
+      "get": {
+        "operationId": "demo_status_api_v1_admin_demo_status_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-admin-token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Demo] Live demo snapshot",
+        "tags": [
+          "demo",
+          "demo"
+        ]
+      }
+    },
+    "/api/v1/admin/demo/zones": {
+      "get": {
+        "operationId": "list_demo_zones_api_v1_admin_demo_zones_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-admin-token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZoneListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Demo] Return all monitored zones grouped by city",
+        "tags": [
+          "demo",
+          "demo"
+        ]
+      }
+    },
+    "/api/v1/admin/fraud/analyze-graph": {
+      "post": {
+        "operationId": "run_graph_analysis_api_v1_admin_fraud_analyze_graph_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphAnalysisResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Admin] Run fraud graph analysis",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/fraud/clusters": {
+      "get": {
+        "operationId": "list_fraud_clusters_api_v1_admin_fraud_clusters_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "resolved",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Resolved",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FraudClustersResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Admin] List fraud clusters (cursor-paginated)",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/fraud/model-status": {
+      "get": {
+        "operationId": "fraud_model_status_api_v1_admin_fraud_model_status_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Admin] Fraud model health",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/fraud/validate-model": {
+      "post": {
+        "operationId": "validate_model_api_v1_admin_fraud_validate_model_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelStatusResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Admin] Re-validate fraud model precision",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/review-queue": {
+      "get": {
+        "operationId": "list_review_queue_api_v1_admin_review_queue_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewQueueListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List manual review queue",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/review-queue/metrics": {
+      "get": {
+        "operationId": "review_queue_metrics_api_v1_admin_review_queue_metrics_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewMetricsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review queue metrics",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/review-queue/{claim_id}": {
+      "get": {
+        "operationId": "get_review_queue_item_api_v1_admin_review_queue__claim_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewQueueDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get full review queue item",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/review-queue/{claim_id}/decide": {
+      "post": {
+        "operationId": "decide_review_queue_item_api_v1_admin_review_queue__claim_id__decide_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewQueueDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve a review queue item",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/simulation/run": {
+      "get": {
+        "operationId": "run_simulation_api_v1_admin_simulation_run_get",
+        "parameters": [
+          {
+            "description": "Scenario name or 'custom'",
+            "in": "query",
+            "name": "scenario",
+            "required": true,
+            "schema": {
+              "description": "Scenario name or 'custom'",
+              "title": "Scenario",
+              "type": "string"
+            }
+          },
+          {
+            "description": "JSON string of parameter overrides",
+            "in": "query",
+            "name": "overrides",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "JSON string of parameter overrides",
+              "title": "Overrides"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Admin] Run insurance economics simulation",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/auth/request-otp": {
+      "post": {
+        "description": "Request OTP for phone number.\n\nGenerates a 6-digit OTP and stores it in Redis with 5-minute TTL.\nCaller must use this OTP to verify and obtain JWT within the TTL.\n\nArgs:\n    payload: Request containing phone number\n    session: Database session\n\nReturns:\n    dict: Success message and OTP (only in dev mode)\n\nRaises:\n    HTTPException: If phone format is invalid",
+        "operationId": "request_otp_api_v1_auth_request_otp_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OTPRequestPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Request Otp Api V1 Auth Request Otp Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Request Otp",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/verify-otp": {
+      "post": {
+        "description": "Verify OTP and login or register worker.\n\nIf worker exists, returns JWT token.\nIf worker doesn't exist, creates new worker and returns JWT token.\n\nArgs:\n    payload: OTP verification request payload\n    session: Database session\n\nReturns:\n    dict: JWT token and worker profile\n\nRaises:\n    HTTPException: If OTP is invalid, expired, or registration fails",
+        "operationId": "verify_otp_api_v1_auth_verify_otp_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OTPVerifyPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Verify Otp Api V1 Auth Verify Otp Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Verify Otp",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/claims": {
+      "get": {
+        "description": "Returns the authenticated worker's claim history, newest first.",
+        "operationId": "list_my_claims_api_v1_claims_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List my claims",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/v1/claims/admin/claims": {
+      "get": {
+        "description": "Returns all claims with optional filters. Requires REVIEWER role or higher.",
+        "operationId": "admin_list_claims_api_v1_claims_admin_claims_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "zone",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Zone"
+            }
+          },
+          {
+            "in": "query",
+            "name": "trigger_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Trigger Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "min_fraud",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Fraud"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Admin] List all claims",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/v1/claims/admin/claims/{claim_id}/review": {
+      "patch": {
+        "description": "Admin manually resolves a claim in 'in_review' status. 'approve' initiates an immediate payout; 'reject' closes the claim. Requires REVIEWER role or higher.",
+        "operationId": "admin_review_claim_api_v1_claims_admin_claims__claim_id__review_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReviewResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Admin] Approve or reject a held/flagged claim",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/v1/claims/apply": {
+      "post": {
+        "description": "Creates a claim for the authenticated worker using their active policy and an active trigger in their service zones. If an identical claim already exists for the same worker-policy-trigger triplet, that claim is returned instead of creating a duplicate.",
+        "operationId": "apply_for_claim_api_v1_claims_apply_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyClaimRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplyClaimResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply for a claim against an active trigger",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/v1/claims/{claim_id}": {
+      "get": {
+        "description": "Returns a single claim with fraud reason tags (human-readable), payout status, and a full audit timeline.",
+        "operationId": "get_claim_api_v1_claims__claim_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get claim detail",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/v1/claims/{claim_id}/appeal": {
+      "post": {
+        "description": "Allows a worker to write a reason for appealing a rejected or blocked claim. The claim status transitions to 'in_review' and the appeal text is stored in the immutable audit log for admin review.",
+        "operationId": "submit_appeal_api_v1_claims__claim_id__appeal_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "claim_id",
+            "required": true,
+            "schema": {
+              "title": "Claim Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppealRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppealResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit an appeal for a rejected claim",
+        "tags": [
+          "claims"
+        ]
+      }
+    },
+    "/api/v1/fraud/assess": {
+      "post": {
+        "description": "Assess claim for fraud.",
+        "operationId": "assess_fraud_api_v1_fraud_assess_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Assess Fraud",
+        "tags": [
+          "fraud"
+        ]
+      }
+    },
+    "/api/v1/payouts": {
+      "get": {
+        "description": "Returns the authenticated worker's payout history, newest first. Includes gateway reference and confirmation timestamps.",
+        "operationId": "list_my_payouts_api_v1_payouts_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayoutListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List my payout history",
+        "tags": [
+          "payouts"
+        ]
+      }
+    },
+    "/api/v1/payouts/admin/payouts/{payout_id}/retry": {
+      "post": {
+        "description": "Manually retries a PayoutTransaction that is in 'failed' status. Re-calls the gateway and updates the record. Requires RISK_ADMIN or PLATFORM_ADMIN role.",
+        "operationId": "admin_retry_payout_api_v1_payouts_admin_payouts__payout_id__retry_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "payout_id",
+            "required": true,
+            "schema": {
+              "title": "Payout Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "[Admin] Retry a failed payout",
+        "tags": [
+          "payouts"
+        ]
+      }
+    },
+    "/api/v1/payouts/{payout_id}": {
+      "get": {
+        "description": "Returns a single PayoutTransaction with its gateway reference, confirmation timestamp, and the full payout amount formula breakdown.",
+        "operationId": "get_payout_api_v1_payouts__payout_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "payout_id",
+            "required": true,
+            "schema": {
+              "title": "Payout Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/routers__payouts__PayoutDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get payout detail",
+        "tags": [
+          "payouts"
+        ]
+      }
+    },
+    "/api/v1/policies/purchase": {
+      "post": {
+        "operationId": "purchase_policy_api_v1_policies_purchase_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyPurchaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyLifecycleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Purchase a weekly policy",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/v1/policies/quote": {
+      "post": {
+        "operationId": "quote_policy_api_v1_policies_quote_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyQuoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyQuoteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get a worker policy quote",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/v1/policies/{policy_id}": {
+      "get": {
+        "operationId": "get_policy_api_v1_policies__policy_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policy_id",
+            "required": true,
+            "schema": {
+              "title": "Policy Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyLifecycleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get a policy by ID",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/v1/policies/{policy_id}/cancel": {
+      "post": {
+        "operationId": "cancel_policy_api_v1_policies__policy_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policy_id",
+            "required": true,
+            "schema": {
+              "title": "Policy Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyLifecycleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel an active policy",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/v1/policies/{policy_id}/renew": {
+      "post": {
+        "operationId": "renew_policy_api_v1_policies__policy_id__renew_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policy_id",
+            "required": true,
+            "schema": {
+              "title": "Policy Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyLifecycleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Renew an active policy",
+        "tags": [
+          "policies"
+        ]
+      }
+    },
+    "/api/v1/pricing/quote": {
+      "get": {
+        "description": "Returns computed weekly premiums for all three plan variants along with the top-3 explainability factors and a full risk-profile snapshot. If a RiskProfile does not exist yet, the quote uses neutral defaults and is flagged as estimated.",
+        "operationId": "get_pricing_quote_api_v1_pricing_quote_get",
+        "parameters": [
+          {
+            "description": "UUID of the authenticated worker",
+            "in": "query",
+            "name": "worker_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "UUID of the authenticated worker",
+              "title": "Worker Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricingQuoteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get dynamic weekly premium quote",
+        "tags": [
+          "pricing"
+        ]
+      }
+    },
+    "/api/v1/pricing/risk-profile": {
+      "get": {
+        "description": "Returns the latest persisted RiskProfile for a worker. If no profile exists, one is computed from current data and saved. Intended for admin inspection and debugging.",
+        "operationId": "get_risk_profile_api_v1_pricing_risk_profile_get",
+        "parameters": [
+          {
+            "description": "UUID of the worker",
+            "in": "query",
+            "name": "worker_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "UUID of the worker",
+              "title": "Worker Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-internal-service",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Internal-Service"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Risk Profile Api V1 Pricing Risk Profile Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get (or compute) a worker's risk profile",
+        "tags": [
+          "pricing"
+        ]
+      }
+    },
+    "/api/v1/triggers/active": {
+      "get": {
+        "description": "Returns all TriggerEvent rows that are currently in 'active' status. These are the events that have caused (or will cause) automatic payouts. Optionally filter by city, zone, or trigger type. When data is older than 5 minutes, is_cached=true and cache_age_minutes are set. When DB is empty and MOCK_MODE=true, returns static demo triggers.",
+        "operationId": "get_active_api_v1_triggers_active_get",
+        "parameters": [
+          {
+            "description": "Filter by city, e.g. 'Mumbai'",
+            "in": "query",
+            "name": "city",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by city, e.g. 'Mumbai'",
+              "title": "City"
+            }
+          },
+          {
+            "description": "Filter by zone, e.g. 'Andheri'",
+            "in": "query",
+            "name": "zone",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by zone, e.g. 'Andheri'",
+              "title": "Zone"
+            }
+          },
+          {
+            "description": "Filter by trigger type",
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by trigger type",
+              "title": "Type"
+            }
+          },
+          {
+            "description": "Max rows to return",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Max rows to return",
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActiveTriggersResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List active trigger events",
+        "tags": [
+          "triggers"
+        ]
+      }
+    },
+    "/api/v1/triggers/simulate": {
+      "post": {
+        "description": "Manually inject a parametric trigger into the system. Writes a TriggerEvent row with status='active' and confidence_score=0.95, then publishes it on the Redis 'trigger_events' channel so Claim Orchestration picks it up immediately. Requires the X-Admin-Token header. Intended for demo videos and integration testing.",
+        "operationId": "simulate_api_v1_triggers_simulate_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-admin-token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Admin-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulateResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Simulate / inject a trigger event (admin only)",
+        "tags": [
+          "triggers"
+        ]
+      }
+    },
+    "/api/v1/triggers/{trigger_id}": {
+      "get": {
+        "description": "Returns a single TriggerEvent by ID, including the full audit_snapshot which records the raw sensor readings, sources, and confidence breakdown at the moment of evaluation.",
+        "operationId": "get_trigger_api_v1_triggers__trigger_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trigger_id",
+            "required": true,
+            "schema": {
+              "title": "Trigger Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TriggerEventResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get trigger event detail",
+        "tags": [
+          "triggers"
+        ]
+      }
+    }
+  }
+}

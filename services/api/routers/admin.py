@@ -21,6 +21,8 @@ from core.config import settings
 from core.database import get_db
 from core.rate_limiter import rate_limit
 from core.redis import get_redis
+from core.auth_dependencies import require_role, require_admin, CurrentUser
+from core.roles import Role
 from models import AuditLog, FraudCluster
 
 logger = logging.getLogger(__name__)
@@ -121,18 +123,18 @@ class SimulationRunResponse(BaseModel):
 
 @router.get(
     "/dashboard",
-    dependencies=[Depends(_require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
+    dependencies=[Depends(require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
     summary="[Admin] Dashboard summary",
 )
-async def get_dashboard():
-    return {"message": "Admin dashboard endpoint"}
+async def get_dashboard(current_user: CurrentUser = Depends(require_admin)):
+    return {"message": "Admin dashboard endpoint", "user": str(current_user)}
 
 
 @router.get(
     "/audit-logs",
     response_model=AuditLogListResponse,
     summary="[Admin] List audit logs",
-    dependencies=[Depends(_require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
+    dependencies=[Depends(require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
 )
 async def list_audit_logs(
     page: int = Query(1, ge=1),
@@ -183,7 +185,7 @@ async def list_audit_logs(
     "/fraud/model-status",
     response_model=ModelStatusResponse,
     summary="[Admin] Fraud model health",
-    dependencies=[Depends(_require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
+    dependencies=[Depends(require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
 )
 async def fraud_model_status() -> ModelStatusResponse:
     from ml.fraud_model import get_model_status
@@ -196,7 +198,7 @@ async def fraud_model_status() -> ModelStatusResponse:
     response_model=GraphAnalysisResponse,
     status_code=status.HTTP_200_OK,
     summary="[Admin] Run fraud graph analysis",
-    dependencies=[Depends(_require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
+    dependencies=[Depends(require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
 )
 async def run_graph_analysis(session: AsyncSession = Depends(get_db)) -> GraphAnalysisResponse:
     from services.fraud_graph_service import analyze_fraud_graph
@@ -217,7 +219,7 @@ async def run_graph_analysis(session: AsyncSession = Depends(get_db)) -> GraphAn
     "/fraud/clusters",
     response_model=FraudClustersResponse,
     summary="[Admin] List fraud clusters (cursor-paginated)",
-    dependencies=[Depends(_require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
+    dependencies=[Depends(require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
 )
 async def list_fraud_clusters(
     session: AsyncSession = Depends(get_db),
@@ -312,7 +314,7 @@ async def list_fraud_clusters(
     "/fraud/validate-model",
     response_model=ModelStatusResponse,
     summary="[Admin] Re-validate fraud model precision",
-    dependencies=[Depends(_require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
+    dependencies=[Depends(require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
 )
 async def validate_model() -> ModelStatusResponse:
     from ml.fraud_model import get_model_status, validate_model_precision
@@ -325,7 +327,7 @@ async def validate_model() -> ModelStatusResponse:
     "/simulation/run",
     response_model=SimulationRunResponse,
     summary="[Admin] Run insurance economics simulation",
-    dependencies=[Depends(_require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
+    dependencies=[Depends(require_admin), Depends(rate_limit(per_ip=100, per_identity=100, burst=20))],
 )
 async def run_simulation(
     scenario: str = Query(..., description="Scenario name or 'custom'"),

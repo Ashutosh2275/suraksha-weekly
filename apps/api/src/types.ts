@@ -6,8 +6,10 @@ export interface Worker {
   phone: string;
   city: string;
   zone: string;
+  zoneIds?: string[];
   accountAgeDays: number;
   activeHours14d: number;
+  avgWeeklyEarnings?: number;
   payoutAccountVerified: boolean;
   locationConsistency: number;
   trustScore: number;
@@ -19,12 +21,15 @@ export interface Policy {
   workerId: string;
   city: string;
   zone: string;
+  zoneIds?: string[];
   plan: "basic" | "standard" | "pro";
   premium: number;
   weeklyCoverageCap: number;
+  coverageLimit?: number;
   startsAt: string;
   endsAt: string;
   waitingPeriodHours: number;
+  waitingPeriodEndsAt?: string;
   status: "active" | "lapsed" | "cancelled";
   renewalOfPolicyId?: string;
   cancelledAt?: string;
@@ -92,6 +97,11 @@ export interface TriggerEvent {
   source?: "weather" | "aqi" | "platform" | "manual" | "synthetic";
   zone: string;
   confidence: number;
+  severityFactor?: number;
+  eventStart?: string;
+  eventEnd?: string;
+  isConfirmed?: boolean;
+  sourceData?: Record<string, unknown>;
   adapter?: "weather-mock" | "aqi-mock" | "fallback";
   degradedMode?: boolean;
   observedAt?: string;

@@ -22,6 +22,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.config import settings
 from core.database import get_db
 from core.security import JWTHandler
+from core.auth_dependencies import require_role, require_risk_admin, CurrentUser
+from core.roles import Role
 from models import Claim, PayoutTransaction, TriggerEvent
 from services.payout_service import retry_failed_payout
 
@@ -248,13 +250,13 @@ async def get_payout(
     description=(
         "Manually retries a PayoutTransaction that is in 'failed' status. "
         "Re-calls the gateway and updates the record. "
-        "Requires X-Admin-Token header."
+        "Requires RISK_ADMIN or PLATFORM_ADMIN role."
     ),
-    dependencies=[Depends(_require_admin)],
+    dependencies=[Depends(require_risk_admin)],
 )
 async def admin_retry_payout(
     payout_id:     str,
-    x_admin_token: Annotated[Optional[str], Header()] = None,
+    current_user:  CurrentUser = Depends(require_risk_admin),
     session:       AsyncSession = Depends(get_db),
 ) -> RetryResponse:
     pt = await _get_payout_or_404(session, payout_id)
@@ -267,7 +269,7 @@ async def admin_retry_payout(
             ),
         )
 
-    actor = f"admin:{x_admin_token[:8]}…" if x_admin_token else "admin"
+    actor = f"{current_user.role.value}:{current_user.user_id}"
 
     try:
         payout = await retry_failed_payout(payout_id, session, actor=actor)

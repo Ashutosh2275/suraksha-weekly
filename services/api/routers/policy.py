@@ -481,9 +481,9 @@ async def purchase_policy(
     raw_coverage_cap = plan_quote["coverage_cap"]
     coverage_cap     = min(raw_coverage_cap, rules["coverage_cap_max"])
 
-    # weekly_premium: from pricing engine with trust multiplier applied
-    trust_mult   = get_trust_premium_multiplier(worker.trust_tier or "bronze")
-    weekly_prem  = round(plan_quote["weekly_premium"] * trust_mult, 2)
+    # weekly_premium: already includes trust adjustment in the new pricing engine
+    trust_mult   = quote.get("trust_adjustment", get_trust_premium_multiplier(worker.trust_tier or "bronze"))
+    weekly_prem  = round(plan_quote["weekly_premium"], 2)
 
     # ── Create policy ─────────────────────────────────────────────────────────
     now        = datetime.utcnow()

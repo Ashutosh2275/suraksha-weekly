@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+	--color-bg: #f4f6f8;
+	--color-surface: #ffffff;
+	--color-surface-raised: #ffffff;
+	--color-surface-muted: #eef2f6;
+	--color-border: #d6dde5;
+	--color-border-strong: #bcc7d4;
+	--color-text: #132238;
+	--color-text-soft: #516077;
+	--color-primary: #0064d2;
+	--color-primary-strong: #004fa8;
+	--color-danger: #d92d20;
+	--color-danger-strong: #b42318;
+	--radius-sm: 0.5rem;
+	--radius-md: 0.75rem;
+	--radius-lg: 1rem;
+}
+
+@layer base {
+	html {
+		-webkit-text-size-adjust: 100%;
+		text-size-adjust: 100%;
+	}
+
+	body {
+		margin: 0;
+		min-height: 100vh;
+		background: radial-gradient(circle at top right, #ebf4ff 0%, var(--color-bg) 48%, #eaf0f6 100%);
+		color: var(--color-text);
+		font-family: "Manrope", "Segoe UI", sans-serif;
+	}
+
+	* {
+		border-color: var(--color-border);
+	}
+
+	button,
+	[role="button"],
+	a {
+		min-height: 44px;
+	}
+
+	input,
+	select,
+	textarea {
+		min-height: 44px;
+	}
+}

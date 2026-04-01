@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Policy {
+  id                     String        @id @default(uuid()) @db.Uuid
+  worker_id              String        @db.Uuid
+  status                 PolicyStatus
+  coverage_start         DateTime
+  coverage_end           DateTime
+  premium_amount         Decimal       @db.Decimal(12, 2)
+  coverage_limit         Decimal       @db.Decimal(12, 2)
+  zone_ids               String[]
+  waiting_period_ends_at DateTime?
+  created_at             DateTime      @default(now())
+  cancelled_at           DateTime?
+
+  worker Worker  @relation(fields: [worker_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  claims Claim[]
+
+  @@unique([worker_id, coverage_start])
+  @@index([worker_id])
+  @@index([status])
+  @@map("policies")
+}
+
+model Worker {
+  id                  String         @id @default(uuid()) @db.Uuid
+  phone               String         @unique
+  full_name           String
+  city                String
+  platform_type       PlatformType
+  avg_daily_hours     Decimal        @db.Decimal(5, 2)
+  avg_weekly_earnings Decimal        @db.Decimal(12, 2)
+  created_at          DateTime       @default(now())
+  is_active           Boolean        @default(true)
+
+  risk_profile         RiskProfile?
+  policies             Policy[]
+  claims               Claim[]
+  payout_transactions  PayoutTransaction[]
+
+  @@index([city])
+  @@index([platform_type])
+  @@map("workers")
+}
+
+model RiskProfile {
+  id                           String   @id @default(uuid()) @db.Uuid
+  worker_id                    String   @unique @db.Uuid
+  location_risk_index          Decimal  @db.Decimal(6, 3)
+  disruption_frequency_score   Decimal  @db.Decimal(6, 3)
+  exposure_multiplier          Decimal  @db.Decimal(6, 3)
+  trust_adjustment             Decimal  @db.Decimal(4, 2)
+  last_computed_at             DateTime
+  version                      Int      @default(1)
+
+  worker Worker @relation(fields: [worker_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("risk_profiles")
+}
+
+model TriggerEvent {
+  id               String          @id @default(uuid()) @db.Uuid
+  trigger_type     TriggerType
+  zone_id          String
+  severity_factor  Decimal         @db.Decimal(6, 3)
+  confidence_score Decimal         @db.Decimal(6, 3)
+  source_data      Json
+  event_start      DateTime
+  event_end        DateTime
+  is_confirmed     Boolean         @default(false)
+  created_at       DateTime        @default(now())
+
+  claims Claim[]
+
+  @@index([zone_id])
+  @@index([trigger_type])
+  @@map("trigger_events")
+}
+
+model Claim {
+  id               String       @id @default(uuid()) @db.Uuid
+  policy_id        String       @db.Uuid
+  trigger_event_id String       @db.Uuid
+  worker_id        String       @db.Uuid
+  status           ClaimStatus
+  payout_amount    Decimal?     @db.Decimal(12, 2)
+  rejection_reason String?
+  initiated_at     DateTime     @default(now())
+  resolved_at      DateTime?
+  decision_trace   Json
+
+  policy          Policy            @relation(fields: [policy_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  trigger_event   TriggerEvent      @relation(fields: [trigger_event_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  worker          Worker            @relation(fields: [worker_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  fraud_assessment FraudAssessment?
+  payout_transaction PayoutTransaction?
+
+  @@unique([worker_id, policy_id, trigger_event_id])
+  @@index([status])
+  @@index([initiated_at])
+  @@map("claims")
+}
+
+model FraudAssessment {
+  id           String            @id @default(uuid()) @db.Uuid
+  claim_id     String            @unique @db.Uuid
+  fraud_score  Decimal           @db.Decimal(4, 3)
+  risk_tier    FraudRiskTier
+  reason_tags  String[]
+  rule_flags   Json
+  ml_score     Decimal?          @db.Decimal(4, 3)
+  reviewed_by  String?
+  reviewed_at  DateTime?
+  decision     FraudDecision
+  created_at   DateTime          @default(now())
+
+  claim Claim @relation(fields: [claim_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([risk_tier])
+  @@map("fraud_assessments")
+}
+
+model PayoutTransaction {
+  id                 String              @id @default(uuid()) @db.Uuid
+  claim_id           String              @unique @db.Uuid
+  worker_id          String              @db.Uuid
+  amount             Decimal             @db.Decimal(12, 2)
+  beneficiary_handle String
+  gateway            String
+  gateway_reference  String?
+  status             PayoutStatus
+  idempotency_key    String              @unique
+  initiated_at       DateTime            @default(now())
+  settled_at         DateTime?
+  reconciled         Boolean             @default(false)
+
+  claim  Claim  @relation(fields: [claim_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  worker Worker @relation(fields: [worker_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([status])
+  @@index([initiated_at])
+  @@map("payout_transactions")
+}
+
+model AuditLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  entity_type    String
+  entity_id      String
+  action         String
+  actor_id       String?
+  actor_role     String?
+  previous_state Json?
+  new_state      Json?
+  metadata       Json?
+  created_at     DateTime @default(now())
+
+  @@index([created_at])
+  @@index([entity_type, entity_id])
+  @@map("audit_logs")
+}
+
+enum PlatformType {
+  SWIGGY
+  ZOMATO
+  OTHER
+}
+
+enum PolicyStatus {
+  ACTIVE
+  LAPSED
+  CANCELLED
+  EXPIRED
+}
+
+enum ClaimStatus {
+  INITIATED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  PAID
+}
+
+enum TriggerType {
+  HEAVY_RAIN
+  EXTREME_HEAT
+  SEVERE_POLLUTION
+  LOCAL_RESTRICTION
+  PLATFORM_OUTAGE
+}
+
+enum FraudRiskTier {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FraudDecision {
+  APPROVE
+  HOLD
+  BLOCK
+}
+
+enum PayoutStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  UNCERTAIN
+}

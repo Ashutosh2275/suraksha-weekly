@@ -686,7 +686,7 @@ async def e2e_health_check() -> E2EHealthResponse:
     quote_ok = False
     if worker_id:
         try:
-            from services.pricing_service import compute_weekly_premium
+            from services.pricing import compute_weekly_premium
             async with DatabaseManager._session_factory() as session:
                 quote = await compute_weekly_premium(worker_id, session)
                 quote_ok = bool(quote and quote.get("plans"))

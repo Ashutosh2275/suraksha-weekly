@@ -1,0 +1,137 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: suraksha-postgres
+    environment:
+      POSTGRES_USER: suraksha
+      POSTGRES_PASSWORD: suraksha_dev_password
+      POSTGRES_DB: suraksha_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U suraksha"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: suraksha-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # API Service (Main Backend)
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api
+    container_name: suraksha-api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://suraksha:suraksha_dev_password@postgres:5432/suraksha_db
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: dev-secret-key-change-in-production
+      JWT_SECRET: jwt-secret-key-change-in-production
+      ENVIRONMENT: development
+      DEBUG: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../../services/api:/app
+      - ../../shared:/app/shared
+    restart: unless-stopped
+
+  # Fraud Scoring Service
+  fraud:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.fraud
+    container_name: suraksha-fraud
+    ports:
+      - "8002:8002"
+    environment:
+      DATABASE_URL: postgresql://suraksha:suraksha_dev_password@postgres:5432/suraksha_db
+      FRAUD_MODEL_PATH: /models/fraud_detection_model.pkl
+      FRAUD_THRESHOLD_HIGH: "0.6"
+      FRAUD_THRESHOLD_CRITICAL: "0.85"
+      SERVICE_PORT: "8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../services/fraud:/app
+      - ../../shared:/app/shared
+    restart: unless-stopped
+
+  # Trigger Ingestion Service
+  trigger:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.trigger
+    container_name: suraksha-trigger
+    ports:
+      - "8003:8003"
+    environment:
+      DATABASE_URL: postgresql://suraksha:suraksha_dev_password@postgres:5432/suraksha_db
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-demo_key}
+      OPENWEATHER_API_URL: https://api.openweathermap.org/data/2.5
+      TRIGGER_HEAVY_RAIN_MM: "5.0"
+      TRIGGER_EXTREME_HEAT_C: "42.0"
+      TRIGGER_POLLUTION_AQI: "300"
+      SERVICE_PORT: "8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../services/trigger:/app
+      - ../../shared:/app/shared
+    restart: unless-stopped
+
+  # Worker Web (Frontend)
+  worker-web:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.worker-web
+    container_name: suraksha-worker-web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # Admin Web (Dashboard)
+  admin-web:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.admin-web
+    container_name: suraksha-admin-web
+    ports:
+      - "3001:3001"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

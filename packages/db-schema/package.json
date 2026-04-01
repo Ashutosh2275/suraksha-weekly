@@ -1,0 +1,23 @@
+{
+  "name": "@suraksha/db-schema",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prisma schema and database migrations",
+  "scripts": {
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:studio": "prisma studio",
+    "prisma:reset": "prisma migrate reset",
+    "prisma:seed": "prisma db seed"
+  },
+  "prisma": {
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.7.1"
+  },
+  "devDependencies": {
+    "prisma": "^5.7.1"
+  }
+}

@@ -41,7 +41,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, synonym
 import uuid
 
 Base = declarative_base()
@@ -207,11 +207,13 @@ class PayoutTransaction(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     claim_id = Column(String, ForeignKey("claims.id"), nullable=False, unique=True, index=True)
     worker_id = Column(String, ForeignKey("workers.id"), nullable=False, index=True)
+    beneficiary_handle = Column(String, nullable=True, index=True)
     amount = Column(Float, nullable=False)
     gateway = Column(String, nullable=False)  # razorpay, stripe
     gateway_ref = Column(String, nullable=True, index=True)
     status = Column(String, nullable=False, default="pending")  # pending, processing, completed, failed
     idempotency_key = Column(String, nullable=False, unique=True, index=True)
+    reconciled = Column(Boolean, nullable=False, default=False, index=True)
     initiated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     confirmed_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -220,6 +222,10 @@ class PayoutTransaction(Base):
     # Relationships
     claim = relationship("Claim", back_populates="payout")
     worker = relationship("Worker", back_populates="payouts")
+
+    __table_args__ = (
+        UniqueConstraint('claim_id', 'beneficiary_handle', name='uq_payout_claim_beneficiary'),
+    )
 
 
 class AuditLog(Base):
@@ -233,10 +239,15 @@ class AuditLog(Base):
     entity_type = Column(String, nullable=False, index=True)  # Claim, Policy, Worker, etc.
     entity_id = Column(String, nullable=False, index=True)
     action = Column(String, nullable=False)  # created, updated, approved, rejected, paid
-    actor = Column(String, nullable=False)  # system, admin_user_id, etc.
+    actor_role = Column(String, nullable=True)
+    actor = synonym("actor_role")
     actor_id = Column(String, ForeignKey("workers.id"), nullable=True)
-    payload = Column(JSON, nullable=False, default={})
-    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    previous_state = Column(JSON, nullable=True)
+    new_state = Column(JSON, nullable=True)
+    metadata_ = Column("metadata", JSON, nullable=False, default={})
+    payload = synonym("metadata_")
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    timestamp = synonym("created_at")
 
     # Relationships
     actor_rel = relationship("Worker", foreign_keys=[actor_id], back_populates="audit_logs")
