@@ -1,19 +1,23 @@
+/* Import Suraksha Weekly Design Tokens */
+@import './styles/tokens.css';
+
+/* Legacy variable mappings for backward compatibility */
 :root {
-  --bg: #f7f1e8;
-  --bg-alt: #eef8f3;
-  --surface: rgba(255, 252, 247, 0.86);
-  --surface-strong: #fffdfa;
-  --surface-soft: #f4efe7;
-  --ink: #1a2a23;
-  --muted: #617168;
-  --accent: #0f8e62;
-  --accent-deep: #0d5e47;
-  --accent-soft: #dbf2e8;
-  --warm: #c97d2d;
-  --danger: #a33a2a;
-  --line: rgba(26, 42, 35, 0.1);
-  --shadow-lg: 0 24px 64px rgba(26, 42, 35, 0.12);
-  --shadow-sm: 0 10px 24px rgba(26, 42, 35, 0.08);
+  --bg: var(--color-surface-base);
+  --bg-alt: var(--color-surface-subtle);
+  --surface: var(--color-surface-card);
+  --surface-strong: var(--color-surface-card);
+  --surface-soft: var(--color-surface-subtle);
+  --ink: var(--color-text-primary);
+  --muted: var(--color-text-secondary);
+  --accent: var(--color-brand-accent);
+  --accent-deep: var(--color-brand-accent-hover);
+  --accent-soft: var(--color-brand-accent-light);
+  --warm: var(--color-brand-secondary);
+  --danger: var(--color-brand-danger);
+  --line: var(--color-border-default);
+  --shadow-lg: var(--shadow-elevated);
+  --shadow-sm: var(--shadow-card);
 }
 
 * {

@@ -18,6 +18,15 @@
 	--radius-sm: 0.5rem;
 	--radius-md: 0.75rem;
 	--radius-lg: 1rem;
+
+	/* Admin Dashboard Colors */
+	--admin-sidebar-bg: #0D1B3E;
+	--admin-sidebar-text: #94A3C0;
+	--admin-sidebar-active: #FFFFFF;
+	--admin-sidebar-accent: #F5A623;
+	--admin-content-bg: #F4F6FB;
+	--admin-card-bg: #FFFFFF;
+	--admin-border: #E2E8F0;
 }
 
 @layer base {

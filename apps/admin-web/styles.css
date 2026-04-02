@@ -1,21 +1,25 @@
+/* Import Suraksha Weekly Design Tokens */
+@import './styles/tokens.css';
+
+/* Legacy variable mappings for backward compatibility */
 :root {
   color-scheme: light;
-  --ink: #162139;
-  --muted: #5c6d87;
-  --accent: #0d6d52;
-  --accent-deep: #0a4f3c;
-  --accent-soft: #dff2eb;
-  --warm: #cf7d27;
-  --warm-soft: #fff1df;
-  --danger: #b42318;
-  --line: rgba(22, 33, 57, 0.1);
-  --surface: rgba(255, 255, 255, 0.82);
-  --surface-strong: #ffffff;
-  --bg-top: #f7efe4;
-  --bg-mid: #e7f4ef;
-  --bg-bot: #eff5ff;
-  --shadow-lg: 0 24px 72px rgba(22, 33, 57, 0.12);
-  --shadow-sm: 0 10px 28px rgba(22, 33, 57, 0.08);
+  --ink: var(--color-text-primary);
+  --muted: var(--color-text-secondary);
+  --accent: var(--color-brand-accent);
+  --accent-deep: var(--color-brand-accent-hover);
+  --accent-soft: var(--color-brand-accent-light);
+  --warm: var(--color-brand-secondary);
+  --warm-soft: var(--color-brand-secondary-light);
+  --danger: var(--color-brand-danger);
+  --line: var(--color-border-default);
+  --surface: var(--color-surface-card);
+  --surface-strong: var(--color-surface-card);
+  --bg-top: var(--color-surface-base);
+  --bg-mid: var(--color-surface-subtle);
+  --bg-bot: var(--color-surface-base);
+  --shadow-lg: var(--shadow-elevated);
+  --shadow-sm: var(--shadow-card);
 }
 
 * {

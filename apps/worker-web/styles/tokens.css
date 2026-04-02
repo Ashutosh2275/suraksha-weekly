@@ -1,0 +1,209 @@
+/**
+ * Suraksha Weekly Design System Tokens
+ * 
+ * Brand identity: Protection, trust, and warmth for gig workers
+ * Visual language: Trustworthy, warm, modern — the calm confidence of a reliable umbrella
+ */
+
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* === Brand Colors === */
+  /* Primary: Deep indigo — trust, stability */
+  --color-brand-primary: #1B4FCC;
+  --color-brand-primary-hover: #1640B3;
+  --color-brand-primary-light: #E8EEFB;
+  
+  /* Secondary: Warm amber — earnings, energy */
+  --color-brand-secondary: #F5A623;
+  --color-brand-secondary-hover: #DC941F;
+  --color-brand-secondary-light: #FEF5E7;
+  
+  /* Accent: Emerald — payout success, safety */
+  --color-brand-accent: #00C896;
+  --color-brand-accent-hover: #00B387;
+  --color-brand-accent-light: #E6F9F4;
+  
+  /* Danger: Alert red — fraud, block */
+  --color-brand-danger: #E53535;
+  --color-brand-danger-hover: #CC2E2E;
+  --color-brand-danger-light: #FDEAEA;
+  
+  /* Warning: Amber — warnings */
+  --color-brand-warning: #F5A623;
+  --color-brand-warning-hover: #DC941F;
+  --color-brand-warning-light: #FEF5E7;
+
+  /* === Surface Colors === */
+  /* Base: Off-white page background */
+  --color-surface-base: #F7F8FC;
+  
+  /* Card: Pure white for cards */
+  --color-surface-card: #FFFFFF;
+  
+  /* Subtle: Light indigo tint for sections */
+  --color-surface-subtle: #EEF1FA;
+  
+  /* Inverse: Dark navy for hero sections */
+  --color-surface-inverse: #0D1B3E;
+  
+  /* Borders */
+  --color-border-default: #E2E8F0;
+  --color-border-subtle: #F1F5F9;
+  --color-border-strong: #CBD5E1;
+
+  /* === Text Colors === */
+  /* Primary: Deep navy — all primary text */
+  --color-text-primary: #0D1B3E;
+  
+  /* Secondary: Slate — secondary labels */
+  --color-text-secondary: #4A5568;
+  
+  /* Muted: Gray — hints, placeholders */
+  --color-text-muted: #A0AEC0;
+  
+  /* Inverse: White on dark backgrounds */
+  --color-text-inverse: #FFFFFF;
+  
+  /* Accent: Indigo — links, active states */
+  --color-text-accent: #1B4FCC;
+
+  /* === Typography === */
+  /* Display: Headings — geometric, trustworthy */
+  --font-display: 'Sora', sans-serif;
+  
+  /* Body: Regular text — warm, readable */
+  --font-body: 'DM Sans', sans-serif;
+  
+  /* Mono: Policy IDs, amounts */
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Font Sizes */
+  --font-size-xs: 0.75rem;    /* 12px */
+  --font-size-sm: 0.875rem;   /* 14px */
+  --font-size-base: 1rem;     /* 16px */
+  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-xl: 1.25rem;    /* 20px */
+  --font-size-2xl: 1.5rem;    /* 24px */
+  --font-size-3xl: 1.875rem;  /* 30px */
+  --font-size-4xl: 2.25rem;   /* 36px */
+  --font-size-5xl: 3rem;      /* 48px */
+
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* === Spacing Scale (8px base) === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* === Border Radius === */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* === Shadows === */
+  /* Card: Subtle elevation */
+  --shadow-card: 0 1px 3px rgba(13, 27, 62, 0.06), 0 4px 16px rgba(13, 27, 62, 0.08);
+  
+  /* Elevated: Modal, dropdown */
+  --shadow-elevated: 0 8px 32px rgba(13, 27, 62, 0.12), 0 2px 8px rgba(13, 27, 62, 0.08);
+  
+  /* Brand: CTA buttons, focus states */
+  --shadow-brand: 0 4px 24px rgba(27, 79, 204, 0.20);
+
+  /* === Transitions === */
+  --transition-fast: 150ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  /* === Z-Index Scale === */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-primary);
+}
+
+h1 {
+  font-size: var(--font-size-4xl);
+}
+
+h2 {
+  font-size: var(--font-size-3xl);
+}
+
+h3 {
+  font-size: var(--font-size-2xl);
+}
+
+h4 {
+  font-size: var(--font-size-xl);
+}
+
+h5 {
+  font-size: var(--font-size-lg);
+}
+
+h6 {
+  font-size: var(--font-size-base);
+}
+
+a {
+  color: var(--color-text-accent);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-brand-primary-hover);
+}
+
+code, pre {
+  font-family: var(--font-mono);
+}
