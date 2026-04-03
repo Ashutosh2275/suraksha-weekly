@@ -1,53 +1,66 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui';
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Button } from '@/components/ui'
+import { useOnboardingStore } from '@/store/onboarding'
+import confetti from 'canvas-confetti'
 
+// ===== TYPES =====
+type RiskTier = 'LOW' | 'MEDIUM' | 'HIGH'
+
+// ===== CONSTANTS =====
 const CITIES = [
-  'Mumbai',
-  'Delhi',
-  'Bengaluru',
-  'Hyderabad',
-  'Chennai',
-  'Pune',
-  'Other',
-];
+  { name: 'Mumbai', emoji: '🌧' },
+  { name: 'Delhi', emoji: '🌫' },
+  { name: 'Bengaluru', emoji: '⛈' },
+  { name: 'Hyderabad', emoji: '☀' },
+  { name: 'Chennai', emoji: '🌊' },
+  { name: 'Pune', emoji: '🌦' },
+  { name: 'Other city', emoji: '📍' },
+]
 
 const PLATFORMS = [
-  { id: 'swiggy', name: 'Swiggy', color: 'orange' },
-  { id: 'zomato', name: 'Zomato', color: 'red' },
-  { id: 'other', name: 'Other', color: 'gray' },
-];
+  { name: 'Swiggy', color: '#FC8019', bgColor: 'rgba(252, 128, 25, 0.1)' },
+  { name: 'Zomato', color: '#E23744', bgColor: 'rgba(226, 55, 68, 0.1)' },
+  { name: 'Other', color: 'var(--brand-indigo)', bgColor: 'var(--brand-indigo-light)' },
+]
 
-type RiskTier = 'LOW' | 'MEDIUM' | 'HIGH';
+const STEP_LABELS = ['Profile', 'Schedule', 'Risk Profile', 'Your Plan']
 
-export default function OnboardingPage() {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [direction, setDirection] = useState(1);
+const RISK_TIERS = {
+  LOW: {
+    color: 'emerald',
+    message: "You're in a low-risk zone this season",
+    icon: '🛡️',
+  },
+  MEDIUM: {
+    color: 'amber',
+    message: 'Moderate disruption risk in your area',
+    icon: '⚠️',
+  },
+  HIGH: {
+    color: 'indigo',
+    message: "Higher risk zone — you'll benefit most from coverage",
+    icon: '🔒',
+  },
+}
 
-  // Step 1 data
-  const [selectedCity, setSelectedCity] = useState('');
-  const [selectedPlatform, setSelectedPlatform] = useState('');
+const RISK_FACTORS = [
+  { icon: '🌧', label: 'Monsoon Zone', effect: '↑' },
+  { icon: '🏙', label: 'Metro City', effect: '→' },
+  { icon: '⏰', label: 'Peak Hours', effect: '↑' },
+]
 
-  // Step 2 data
-  const [hoursPerDay, setHoursPerDay] = useState(6);
-  const [weeklyEarnings, setWeeklyEarnings] = useState('');
+const STEPS = [
+  { id: 0, label: 'Profile' },
+  { id: 1, label: 'Schedule' },
+  { id: 2, label: 'Risk Profile' },
+  { id: 3, label: 'Your Plan' },
+]
 
-  // Step 3 data
-  const [isCalculating, setIsCalculating] = useState(true);
-  const [riskTier, setRiskTier] = useState<RiskTier>('LOW');
-  const [trustScore] = useState(80);
-
-  // Step 4 data
-  const [showExplainer, setShowExplainer] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-
-  // Calculate premium based on inputs
-  const calculatePremium = () => {
-    const baseRate = 29;
-    const hourMultiplier = hoursPerDay > 8 ? 1.2 : 1;
-    const earningsMultiplier =
+// ===== COMPONENTS =====
       parseInt(weeklyEarnings.replace(/,/g, '')) > 5000 ? 1.15 : 1;
     return Math.round(baseRate * hourMultiplier * earningsMultiplier);
   };

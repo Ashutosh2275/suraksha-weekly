@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   fullWidth?: boolean;
@@ -26,7 +26,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       primary: 'bg-brand-primary text-text-inverse hover:bg-brand-primary/90 shadow-sm',
       secondary: 'border-2 border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-text-inverse bg-transparent',
       ghost: 'text-brand-primary hover:bg-brand-primary/10 bg-transparent',
-      danger: 'bg-brand-danger text-text-inverse hover:bg-brand-danger/90 shadow-sm'
+      danger: 'bg-brand-danger text-text-inverse hover:bg-brand-danger/90 shadow-sm',
+      outline: 'border border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent'
     };
 
     const sizeStyles = {

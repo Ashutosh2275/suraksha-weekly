@@ -1,167 +1,88 @@
-import React from 'react';
+'use client'
 
-export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'text' | 'circle' | 'card' | 'rectangle';
-  width?: string | number;
-  height?: string | number;
-  lines?: number; // For text variant
-  animate?: boolean;
+export interface SkeletonProps {
+  variant?: 'text' | 'circle' | 'card' | 'button'
+  width?: string | number
+  height?: string | number
+  lines?: number
+  className?: string
 }
 
-export const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
-  ({ 
-    variant = 'text', 
-    width, 
-    height, 
-    lines = 1,
-    animate = true,
-    className = '', 
-    ...props 
-  }, ref) => {
-    const baseStyles = 'bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%]';
-    const animationStyles = animate ? 'animate-pulse' : '';
+export function Skeleton({ 
+  variant = 'text', 
+  width, 
+  height, 
+  lines = 1,
+  className = '' 
+}: SkeletonProps) {
+  const baseStyles = 'animate-shimmer bg-gradient-to-r from-surface-subtle via-border-default to-surface-subtle bg-[length:200%_100%]'
 
-    const getVariantStyles = () => {
-      switch (variant) {
-        case 'text':
-          return 'rounded-md h-4';
-        case 'circle':
-          return 'rounded-full aspect-square';
-        case 'card':
-          return 'rounded-lg';
-        case 'rectangle':
-        default:
-          return 'rounded-md';
-      }
-    };
+  if (variant === 'text') {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: lines }).map((_, i) => (
+          <div
+            key={i}
+            className={`h-4 rounded-full ${baseStyles} ${className}`}
+            style={{
+              width: width || `${100 - i * 5}%`,
+            }}
+          />
+        ))}
+      </div>
+    )
+  }
 
-    const getSize = () => {
-      const styles: React.CSSProperties = {};
-      if (width) styles.width = typeof width === 'number' ? `${width}px` : width;
-      if (height) styles.height = typeof height === 'number' ? `${height}px` : height;
-      
-      // Default sizes for variants
-      if (!width && !height) {
-        switch (variant) {
-          case 'circle':
-            styles.width = '48px';
-            styles.height = '48px';
-            break;
-          case 'card':
-            styles.width = '100%';
-            styles.height = '200px';
-            break;
-          case 'text':
-            styles.width = '100%';
-            break;
-          case 'rectangle':
-            styles.width = '100%';
-            styles.height = '32px';
-            break;
-        }
-      }
-      
-      return styles;
-    };
-
-    if (variant === 'text' && lines > 1) {
-      return (
-        <div ref={ref} className={`space-y-2 ${className}`} {...props}>
-          {Array.from({ length: lines }, (_, index) => (
-            <div
-              key={index}
-              className={`${baseStyles} ${getVariantStyles()} ${animationStyles}`}
-              style={{
-                width: index === lines - 1 ? '75%' : '100%', // Last line is shorter
-                ...getSize()
-              }}
-            />
-          ))}
-        </div>
-      );
-    }
-
+  if (variant === 'circle') {
     return (
       <div
-        ref={ref}
-        className={`${baseStyles} ${getVariantStyles()} ${animationStyles} ${className}`}
-        style={getSize()}
-        {...props}
+        className={`rounded-full ${baseStyles} ${className}`}
+        style={{
+          width: width || height || 48,
+          height: height || width || 48,
+        }}
       />
-    );
+    )
   }
-);
 
-Skeleton.displayName = 'Skeleton';
+  if (variant === 'button') {
+    return (
+      <div
+        className={`rounded-md ${baseStyles} ${className}`}
+        style={{
+          width: width || 120,
+          height: height || 40,
+        }}
+      />
+    )
+  }
 
-// Predefined skeleton components for common use cases
-export const SkeletonText = React.forwardRef<HTMLDivElement, { lines?: number; className?: string }>((
-  { lines = 3, className = '' },
-  ref
-) => (
-  <Skeleton ref={ref} variant="text" lines={lines} className={className} />
-));
-
-SkeletonText.displayName = 'SkeletonText';
-
-export const SkeletonCircle = React.forwardRef<HTMLDivElement, Omit<SkeletonProps, 'variant'>>((props, ref) => (
-  <Skeleton ref={ref} variant="circle" {...props} />
-));
-
-SkeletonCircle.displayName = 'SkeletonCircle';
-
-export const SkeletonCard = React.forwardRef<HTMLDivElement, { className?: string }>((
-  { className = '' }, 
-  ref
-) => (
-  <div ref={ref} className={`bg-surface-card rounded-lg shadow-card p-6 ${className}`}>
-    <div className="flex items-center space-x-4 mb-4">
-      <Skeleton variant="circle" width={48} height={48} />
-      <div className="flex-1 space-y-2">
-        <Skeleton variant="text" width="40%" />
-        <Skeleton variant="text" width="60%" />
+  if (variant === 'card') {
+    return (
+      <div
+        className={`rounded-lg p-6 border border-border-default ${baseStyles} ${className}`}
+        style={{
+          width,
+          height: height || 200,
+        }}
+      >
+        <div className="space-y-4">
+          <div className={`h-6 rounded-full ${baseStyles} w-3/4`} />
+          <div className={`h-4 rounded-full ${baseStyles} w-full`} />
+          <div className={`h-4 rounded-full ${baseStyles} w-5/6`} />
+          <div className={`h-10 rounded-md ${baseStyles} w-1/3 mt-6`} />
+        </div>
       </div>
-    </div>
-    <SkeletonText lines={3} />
-  </div>
-));
+    )
+  }
 
-SkeletonCard.displayName = 'SkeletonCard';
-
-// Complex skeleton layouts for specific use cases
-export const SkeletonProfile = React.forwardRef<HTMLDivElement, { className?: string }>((
-  { className = '' }, 
-  ref
-) => (
-  <div ref={ref} className={`flex items-start gap-4 ${className}`}>
-    <SkeletonCircle width={48} height={48} />
-    <div className="flex-1 space-y-2">
-      <Skeleton variant="text" width="60%" />
-      <Skeleton variant="text" width="40%" />
-    </div>
-  </div>
-));
-
-SkeletonProfile.displayName = 'SkeletonProfile';
-
-export const SkeletonClaimCard = React.forwardRef<HTMLDivElement, { className?: string }>((
-  { className = '' }, 
-  ref
-) => (
-  <div ref={ref} className={`p-6 border border-gray-200 rounded-lg space-y-4 ${className}`}>
-    <div className="flex items-start justify-between">
-      <div className="flex items-center gap-3">
-        <SkeletonCircle width={24} height={24} />
-        <Skeleton variant="text" width="120px" />
-      </div>
-      <Skeleton variant="text" width="80px" />
-    </div>
-    <Skeleton variant="text" width="100%" />
-    <div className="flex items-center justify-between">
-      <Skeleton variant="text" width="100px" />
-      <Skeleton variant="text" width="60px" />
-    </div>
-  </div>
-));
-
-SkeletonClaimCard.displayName = 'SkeletonClaimCard';
+  return (
+    <div
+      className={`${baseStyles} ${className}`}
+      style={{
+        width,
+        height,
+      }}
+    />
+  )
+}

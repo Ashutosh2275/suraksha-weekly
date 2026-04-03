@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useReviewQueue } from '@/lib/ReviewQueueContext';
+import { useReviewQueue } from '@/lib/AppContext';
 
 interface NavItem {
   id: string;
@@ -32,9 +32,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { pendingCount } = useReviewQueue();
+
+  // Fix hydration mismatch - only use pendingCount after client mount
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Create dynamic navigation sections based on context
   const getNavSections = (): NavSection[] => [
@@ -81,7 +87,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           id: 'review-queue',
           label: 'Review Queue',
           href: '/review-queue',
-          badge: pendingCount > 0 ? pendingCount : false,
+          badge: isClient && pendingCount > 0 ? pendingCount : false,
           icon: (
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
               <rect x="4" y="5" width="12" height="10" rx="1" stroke="currentColor" strokeWidth="1.5" />
@@ -349,6 +355,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               {environment}
             </div>
           )}
+          
+          {/* Debug test button - REMOVE IN PRODUCTION */}
+          {!isSidebarCollapsed && process.env.NODE_ENV === 'development' && (
+            <button
+              onClick={() => alert('Debug: Navigation system is working!')}
+              className="mt-2 px-2 py-1 bg-green-600 text-white rounded text-xs font-bold"
+            >
+              🟢 NAV TEST
+            </button>
+          )}
         </div>
 
         {/* Navigation */}
@@ -365,7 +381,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 {section.items.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => router.push(item.href)}
+                    onClick={() => {
+                      console.log('Navigation click:', item.label, item.href);
+                      router.push(item.href);
+                    }}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-150 group relative ${
                       isActive(item.href)
                         ? 'text-white border-l-3'

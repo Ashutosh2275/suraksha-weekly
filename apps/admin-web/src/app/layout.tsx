@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { AdminShell } from "@/components/AdminShell";
-import { ReviewQueueProvider } from "@/lib/ReviewQueueContext";
-import { ClaimsProvider } from "@/lib/ClaimsContext";
+import { AppProvider } from "@/lib/AppContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,11 +22,9 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body">
-        <ClaimsProvider>
-          <ReviewQueueProvider>
-            <AdminShell>{children}</AdminShell>
-          </ReviewQueueProvider>
-        </ClaimsProvider>
+        <AppProvider>
+          <AdminShell>{children}</AdminShell>
+        </AppProvider>
       </body>
     </html>
   );

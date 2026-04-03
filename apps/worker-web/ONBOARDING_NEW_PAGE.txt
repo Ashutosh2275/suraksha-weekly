@@ -1,0 +1,859 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Button } from '@/components/ui'
+import { useOnboardingStore } from '@/store/onboarding'
+import confetti from 'canvas-confetti'
+
+// ===== TYPES =====
+type RiskTier = 'LOW' | 'MEDIUM' | 'HIGH'
+
+// ===== CONSTANTS =====
+const CITIES = [
+  { name: 'Mumbai', emoji: '🌧' },
+  { name: 'Delhi', emoji: '🌫' },
+  { name: 'Bengaluru', emoji: '⛈' },
+  { name: 'Hyderabad', emoji: '☀' },
+  { name: 'Chennai', emoji: '🌊' },
+  { name: 'Pune', emoji: '🌦' },
+  { name: 'Other city', emoji: '📍' },
+]
+
+const PLATFORMS = [
+  { name: 'Swiggy', color: '#FC8019', bgColor: 'rgba(252, 128, 25, 0.1)' },
+  { name: 'Zomato', color: '#E23744', bgColor: 'rgba(226, 55, 68, 0.1)' },
+  { name: 'Other', color: 'var(--brand-indigo)', bgColor: 'var(--brand-indigo-light)' },
+]
+
+const STEP_LABELS = ['Profile', 'Schedule', 'Risk Profile', 'Your Plan']
+
+const RISK_TIERS = {
+  LOW: {
+    color: 'emerald',
+    message: "You're in a low-risk zone this season",
+    icon: '🛡️',
+  },
+  MEDIUM: {
+    color: 'amber',
+    message: 'Moderate disruption risk in your area',
+    icon: '⚠️',
+  },
+  HIGH: {
+    color: 'indigo',
+    message: "Higher risk zone — you'll benefit most from coverage",
+    icon: '🛡️',
+  },
+}
+
+const RISK_FACTORS = [
+  { icon: '🌧', label: 'Monsoon Zone' },
+  { icon: '🏙', label: 'Metro City' },
+  { icon: '⏰', label: 'Peak Hours' },
+]
+
+// ===== HELPER FUNCTIONS =====
+const calculateRisk = (city: string): RiskTier => {
+  if (city === 'Mumbai' || city === 'Bengaluru') return 'HIGH'
+  if (city === 'Delhi' || city === 'Chennai') return 'MEDIUM'
+  return 'LOW'
+}
+
+const formatCurrency = (value: number | string): string => {
+  const num = typeof value === 'string' ? parseFloat(value.replace(/,/g, '')) : value
+  if (!num || isNaN(num)) return '0'
+  return Math.round(num).toLocaleString('en-IN')
+}
+
+// ===== COMPONENTS =====
+
+// Step Progress Bar Component
+function StepProgress({ currentStep }: { currentStep: number }) {
+  return (
+    <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-border-default py-6">
+      <div className="max-w-2xl mx-auto px-4">
+        <div className="flex items-center justify-between">
+          {STEP_LABELS.map((label, index) => (
+            <div key={index} className="flex items-center flex-1">
+              {/* Step Circle */}
+              <div className="flex flex-col items-center">
+                <motion.div
+                  className={`relative flex items-center justify-center rounded-full transition-all duration-300 ${
+                    index < currentStep
+                      ? 'w-10 h-10 bg-brand-indigo'
+                      : index === currentStep
+                      ? 'w-12 h-12 bg-brand-indigo'
+                      : 'w-10 h-10 bg-gray-200'
+                  }`}
+                  initial={false}
+                  animate={{
+                    scale: index === currentStep ? 1.1 : 1,
+                  }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                >
+                  {/* Pulsing ring for current step */}
+                  {index === currentStep && (
+                    <motion.div
+                      className="absolute inset-0 rounded-full border-2 border-brand-indigo"
+                      initial={{ scale: 1, opacity: 0.6 }}
+                      animate={{ scale: 1.6, opacity: 0 }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: 'easeOut',
+                      }}
+                    />
+                  )}
+
+                  {/* Checkmark for completed steps */}
+                  {index < currentStep && (
+                    <motion.svg
+                      className="w-5 h-5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </motion.svg>
+                  )}
+
+                  {/* Dot for current and future steps */}
+                  {index >= currentStep && (
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        index === currentStep ? 'bg-white' : 'bg-gray-400'
+                      }`}
+                    />
+                  )}
+                </motion.div>
+
+                {/* Label */}
+                <span
+                  className={`mt-2 text-xs font-medium transition-colors ${
+                    index <= currentStep ? 'text-brand-indigo' : 'text-gray-400'
+                  }`}
+                >
+                  {label}
+                </span>
+              </div>
+
+              {/* Connecting Line */}
+              {index < STEP_LABELS.length - 1 && (
+                <div className="flex-1 h-0.5 mx-2 bg-gray-200 relative overflow-hidden">
+                  <motion.div
+                    className="absolute inset-0 bg-brand-indigo"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: index < currentStep ? 1 : 0 }}
+                    transition={{ duration: 0.4, ease: 'easeInOut' }}
+                    style={{ transformOrigin: 'left' }}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Step 0: Profile
+function ProfileStep() {
+  const { city, platform, setCity, setPlatform } = useOnboardingStore()
+
+  return (
+    <motion.div
+      className="max-w-2xl mx-auto px-4 py-8"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+    >
+      <h1 className="text-3xl font-bold font-display text-text-primary mb-2">
+        Where do you deliver?
+      </h1>
+      <p className="text-text-secondary mb-8">
+        Help us personalize your coverage to your city and platform
+      </p>
+
+      {/* City Selector */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold font-display text-text-primary mb-4">
+          Select your city
+        </h2>
+        <div className="grid grid-cols-3 gap-3">
+          {CITIES.map((cityOption) => (
+            <motion.button
+              key={cityOption.name}
+              onClick={() => setCity(cityOption.name)}
+              className={`h-12 px-4 rounded-full font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                city === cityOption.name
+                  ? 'bg-brand-indigo-light border-2 border-brand-indigo text-brand-indigo'
+                  : 'bg-white border-2 border-border-default text-text-secondary hover:border-brand-indigo/30'
+              }`}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              animate={
+                city === cityOption.name
+                  ? { scale: 1.04 }
+                  : { scale: 1 }
+              }
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            >
+              <span>{cityOption.emoji}</span>
+              <span className="text-sm">{cityOption.name}</span>
+            </motion.button>
+          ))}
+        </div>
+      </div>
+
+      {/* Platform Selector */}
+      <div>
+        <h2 className="text-lg font-semibold font-display text-text-primary mb-4">
+          Which platform do you use?
+        </h2>
+        <div className="grid grid-cols-1 gap-3">
+          {PLATFORMS.map((platformOption) => (
+            <motion.button
+              key={platformOption.name}
+              onClick={() => setPlatform(platformOption.name)}
+              className={`h-18 px-6 rounded-lg font-semibold transition-all duration-200 flex items-center justify-between ${
+                platform === platformOption.name
+                  ? 'border-2 shadow-md'
+                  : 'bg-white border-2 border-border-default hover:border-brand-indigo/30'
+              }`}
+              style={{
+                borderColor: platform === platformOption.name ? platformOption.color : undefined,
+                backgroundColor: platform === platformOption.name ? platformOption.bgColor : undefined,
+              }}
+              whileHover={{ y: -2, boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <span
+                className="text-xl"
+                style={{
+                  color: platform === platformOption.name ? platformOption.color : '#4A5878',
+                }}
+              >
+                {platformOption.name}
+              </span>
+              {platform === platformOption.name && (
+                <motion.svg
+                  className="w-6 h-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  style={{ color: platformOption.color }}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 300 }}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </motion.svg>
+              )}
+            </motion.button>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// Step 1: Schedule
+function ScheduleStep() {
+  const { hoursPerDay, weeklyEarnings, setHoursPerDay, setWeeklyEarnings } = useOnboardingStore()
+  const [earningsInput, setEarningsInput] = useState(weeklyEarnings.toString())
+
+  const handleEarningsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/,/g, '')
+    if (/^\d*$/.test(value)) {
+      setEarningsInput(value)
+      setWeeklyEarnings(parseInt(value) || 0)
+    }
+  }
+
+  const protectedAmount = Math.min(weeklyEarnings * 0.35, 5000)
+
+  return (
+    <motion.div
+      className="max-w-2xl mx-auto px-4 py-8"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+    >
+      <h1 className="text-3xl font-bold font-display text-text-primary mb-2">
+        Your work schedule
+      </h1>
+      <p className="text-text-secondary mb-8">
+        Tell us about your typical work week
+      </p>
+
+      {/* Hours Slider */}
+      <div className="mb-12">
+        <h2 className="text-lg font-semibold font-display text-text-primary mb-6">
+          Hours per day
+        </h2>
+
+        <div className="relative mb-8">
+          {/* Floating tooltip */}
+          <motion.div
+            className="absolute -top-12 bg-brand-indigo text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-brand"
+            style={{
+              left: `calc(${((hoursPerDay - 2) / 10) * 100}% - 24px)`,
+            }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {hoursPerDay}h
+            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 rotate-45 w-2 h-2 bg-brand-indigo" />
+          </motion.div>
+
+          <input
+            type="range"
+            min="2"
+            max="12"
+            value={hoursPerDay}
+            onChange={(e) => setHoursPerDay(parseInt(e.target.value))}
+            className="w-full h-2 bg-gray-200 rounded-full appearance-none cursor-pointer slider"
+            style={{
+              background: `linear-gradient(to right, var(--brand-indigo) 0%, var(--brand-indigo) ${
+                ((hoursPerDay - 2) / 10) * 100
+              }%, #E2E8F4 ${((hoursPerDay - 2) / 10) * 100}%, #E2E8F4 100%)`,
+            }}
+          />
+        </div>
+
+        {/* Scale labels */}
+        <div className="flex justify-between text-xs text-text-muted mt-2">
+          {[2, 4, 6, 8, 10, 12].map((hour) => (
+            <span key={hour}>{hour}h</span>
+          ))}
+        </div>
+
+        {/* Big display */}
+        <p className="text-2xl font-display font-semibold text-brand-indigo text-center mt-6">
+          You work ~{hoursPerDay} hours per day
+        </p>
+      </div>
+
+      {/* Weekly Earnings */}
+      <div>
+        <h2 className="text-lg font-semibold font-display text-text-primary mb-4">
+          Weekly earnings
+        </h2>
+
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-2xl font-display font-semibold text-brand-amber">
+            ₹
+          </span>
+          <input
+            type="text"
+            value={formatCurrency(earningsInput)}
+            onChange={handleEarningsChange}
+            placeholder="4,200"
+            className="w-full h-16 pl-12 pr-4 text-2xl font-display font-semibold bg-white border-2 border-border-default rounded-lg focus:outline-none focus:border-brand-indigo focus:shadow-[0_0_0_3px_rgba(27,79,204,0.12)] transition-all"
+          />
+        </div>
+
+        <p className="text-sm text-text-muted mt-3">
+          Protected up to{' '}
+          <span className="font-semibold text-brand-indigo">
+            ₹{formatCurrency(protectedAmount)}
+          </span>
+        </p>
+      </div>
+    </motion.div>
+  )
+}
+
+// Step 2: Risk Profile
+function RiskProfileStep() {
+  const { city, riskTier, trustScore, setRiskTier, setTrustScore } = useOnboardingStore()
+  const [isAnalyzing, setIsAnalyzing] = useState(true)
+  const [showResult, setShowResult] = useState(false)
+
+  useEffect(() => {
+    // Calculate risk when entering this step
+    setIsAnalyzing(true)
+    setShowResult(false)
+
+    const timer = setTimeout(() => {
+      const computedRisk = calculateRisk(city)
+      setRiskTier(computedRisk)
+      setTrustScore(80)
+      setIsAnalyzing(false)
+
+      // Show result with flip animation
+      setTimeout(() => {
+        setShowResult(true)
+      }, 100)
+    }, 2500)
+
+    return () => clearTimeout(timer)
+  }, [city, setRiskTier, setTrustScore])
+
+  const tierColor = RISK_TIERS[riskTier].color
+
+  return (
+    <motion.div
+      className="max-w-2xl mx-auto px-4 py-8"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+    >
+      <h1 className="text-3xl font-bold font-display text-text-primary mb-2">
+        Your risk profile
+      </h1>
+      <p className="text-text-secondary mb-8">
+        Analysing weather patterns, city data, and work schedule
+      </p>
+
+      {isAnalyzing ? (
+        <div className="flex flex-col items-center justify-center py-16">
+          {/* Shield filling animation */}
+          <div className="relative w-32 h-32 mb-6">
+            <svg viewBox="0 0 100 100" className="w-full h-full">
+              <path
+                d="M50 5 L85 20 L85 45 Q85 75 50 95 Q15 75 15 45 L15 20 Z"
+                fill="none"
+                stroke="#E2E8F4"
+                strokeWidth="3"
+              />
+              <motion.path
+                d="M50 5 L85 20 L85 45 Q85 75 50 95 Q15 75 15 45 L15 20 Z"
+                fill="var(--brand-indigo)"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 2, ease: 'easeInOut' }}
+              />
+            </svg>
+          </div>
+
+          <p className="text-xl font-display font-semibold text-text-primary mb-2">
+            Analysing your risk profile...
+          </p>
+
+          {/* Pulsing dots */}
+          <div className="flex gap-2 mt-4">
+            {[0, 1, 2].map((i) => (
+              <motion.div
+                key={i}
+                className="w-2 h-2 bg-brand-indigo rounded-full"
+                initial={{ opacity: 0.3 }}
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: i * 0.2,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <motion.div
+          initial={{ rotateY: 90, opacity: 0 }}
+          animate={{ rotateY: 0, opacity: 1 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          style={{ transformStyle: 'preserve-3d' }}
+        >
+          {/* Result Card */}
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-border-default">
+            {/* Top: Gradient with tier */}
+            <div
+              className={`p-8 text-white bg-gradient-to-br ${
+                tierColor === 'emerald'
+                  ? 'from-emerald-500 to-emerald-600'
+                  : tierColor === 'amber'
+                  ? 'from-amber-500 to-amber-600'
+                  : 'from-indigo-500 to-indigo-600'
+              }`}
+            >
+              <div className="flex items-center gap-4 mb-4">
+                <div className="text-5xl">{RISK_TIERS[riskTier].icon}</div>
+                <div>
+                  <h3 className="text-3xl font-bold font-display">{riskTier} RISK</h3>
+                  <p className="text-white/90 text-sm mt-1">
+                    {RISK_TIERS[riskTier].message}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom: Factors and trust score */}
+            <div className="p-8">
+              <h4 className="text-sm font-semibold text-text-secondary mb-3">
+                Risk Factors
+              </h4>
+              <div className="flex gap-2 mb-6">
+                {RISK_FACTORS.map((factor, i) => (
+                  <motion.div
+                    key={i}
+                    className="px-3 py-2 bg-surface-subtle rounded-lg text-sm flex items-center gap-2"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                  >
+                    <span>{factor.icon}</span>
+                    <span className="text-text-secondary font-medium">{factor.label}</span>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Trust Score */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-semibold text-text-secondary">
+                    Trust Score
+                  </span>
+                  <span className="text-xl font-bold font-display text-brand-indigo">
+                    {trustScore}/100
+                  </span>
+                </div>
+                <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-brand-indigo to-brand-indigo-dark"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${trustScore}%` }}
+                    transition={{ duration: 1, delay: 0.5, ease: 'easeOut' }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
+  )
+}
+
+// Step 3: Your Plan
+function YourPlanStep() {
+  const router = useRouter()
+  const { weeklyEarnings, weeklyPremium } = useOnboardingStore()
+  const [showDetails, setShowDetails] = useState(false)
+  const [isActivating, setIsActivating] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+
+  const coverage = Math.min(weeklyEarnings * 0.35, 1500)
+
+  const handleActivate = async () => {
+    setIsActivating(true)
+
+    setTimeout(() => {
+      setIsActivating(false)
+      setShowSuccess(true)
+
+      // Fire confetti
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#1B4FCC', '#F5A623', '#00C896'],
+      })
+
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#1B4FCC', '#F5A623', '#00C896'],
+        })
+      }, 200)
+
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#1B4FCC', '#F5A623', '#00C896'],
+        })
+      }, 400)
+
+      // Navigate to dashboard
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 2000)
+    }, 500)
+  }
+
+  if (showSuccess) {
+    return (
+      <motion.div
+        className="fixed inset-0 z-50 bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <motion.div
+          className="text-center text-white"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+        >
+          <motion.div
+            className="w-24 h-24 mx-auto mb-6 rounded-full bg-white/20 flex items-center justify-center"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+          >
+            <motion.svg
+              className="w-12 h-12 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </motion.svg>
+          </motion.div>
+          <h1 className="text-4xl font-bold font-display mb-2">You're covered!</h1>
+          <p className="text-xl text-white/90">Redirecting to your dashboard...</p>
+        </motion.div>
+      </motion.div>
+    )
+  }
+
+  return (
+    <motion.div
+      className="max-w-2xl mx-auto px-4 py-8"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+    >
+      <h1 className="text-3xl font-bold font-display text-text-primary mb-2">
+        Your protection plan
+      </h1>
+      <p className="text-text-secondary mb-8">
+        Customized for your city, platform, and schedule
+      </p>
+
+      {/* Plan Card */}
+      <div className="bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-border-default mb-6">
+        {/* Top: Premium */}
+        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-8 text-center">
+          <div className="text-6xl font-bold font-display mb-2">₹{weeklyPremium}</div>
+          <p className="text-white/90 text-lg">Billed weekly</p>
+        </div>
+
+        {/* Wavy Divider */}
+        <svg
+          viewBox="0 0 1200 120"
+          preserveAspectRatio="none"
+          className="w-full h-8 -mt-1"
+          style={{ transform: 'translateY(1px)' }}
+        >
+          <path
+            d="M0,0 C150,60 350,0 600,50 C850,100 1050,60 1200,80 L1200,120 L0,120 Z"
+            fill="white"
+          />
+        </svg>
+
+        {/* Bottom: Coverage details */}
+        <div className="p-8 pt-4">
+          <div className="text-center mb-6">
+            <p className="text-text-secondary mb-2">Coverage up to</p>
+            <p className="text-3xl font-bold font-display text-brand-indigo">
+              ₹{formatCurrency(coverage)}
+            </p>
+          </div>
+
+          <div className="flex gap-2 justify-center mb-6">
+            {['🌧 Weather', '🏥 Health', '🚫 Platform'].map((item, i) => (
+              <motion.div
+                key={i}
+                className="px-4 py-2 bg-brand-indigo-light text-brand-indigo rounded-full text-sm font-medium"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+              >
+                {item}
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Why this price? */}
+          <motion.button
+            onClick={() => setShowDetails(!showDetails)}
+            className="w-full text-left flex items-center justify-between py-3 text-text-secondary hover:text-brand-indigo transition-colors"
+          >
+            <span className="text-sm font-medium">Why ₹{weeklyPremium}?</span>
+            <motion.svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              animate={{ rotate: showDetails ? 180 : 0 }}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </motion.svg>
+          </motion.button>
+
+          <AnimatePresence>
+            {showDetails && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <div className="pt-4 pb-2 space-y-2 text-sm text-text-secondary">
+                  <div className="flex justify-between">
+                    <span>Base premium</span>
+                    <span className="font-medium">₹45</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>City risk factor</span>
+                    <span className="font-medium">₹12</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Platform integration</span>
+                    <span className="font-medium">₹10</span>
+                  </div>
+                  <div className="border-t border-border-default pt-2 mt-2 flex justify-between font-semibold text-text-primary">
+                    <span>Total</span>
+                    <span>₹{weeklyPremium}</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Activate Button */}
+      <Button
+        variant="primary"
+        size="lg"
+        fullWidth
+        onClick={handleActivate}
+        loading={isActivating}
+        className="shadow-brand"
+      >
+        Activate Coverage · ₹{weeklyPremium}/week
+      </Button>
+
+      <p className="text-xs text-text-muted text-center mt-4">
+        No hidden fees. Cancel anytime.
+      </p>
+    </motion.div>
+  )
+}
+
+// ===== MAIN COMPONENT =====
+export default function OnboardingPage() {
+  const { currentStep, city, platform, nextStep, prevStep } = useOnboardingStore()
+
+  const canProceed = () => {
+    switch (currentStep) {
+      case 0:
+        return city && platform
+      case 1:
+        return true // Always can proceed from schedule
+      case 2:
+        return true // Auto-advances
+      default:
+        return true
+    }
+  }
+
+  const handleNext = () => {
+    if (canProceed()) {
+      nextStep()
+    }
+  }
+
+  const handleBack = () => {
+    if (currentStep > 0) {
+      prevStep()
+    }
+  }
+
+  // Auto-advance from risk profile
+  useEffect(() => {
+    if (currentStep === 2) {
+      const timer = setTimeout(() => {
+        nextStep()
+      }, 4000) // Wait 4s to show risk profile, then advance
+
+      return () => clearTimeout(timer)
+    }
+  }, [currentStep, nextStep])
+
+  return (
+    <div className="min-h-screen bg-surface-page">
+      <StepProgress currentStep={currentStep} />
+
+      <div className="pb-24">
+        <AnimatePresence mode="wait">
+          {currentStep === 0 && <ProfileStep key="profile" />}
+          {currentStep === 1 && <ScheduleStep key="schedule" />}
+          {currentStep === 2 && <RiskProfileStep key="risk" />}
+          {currentStep === 3 && <YourPlanStep key="plan" />}
+        </AnimatePresence>
+      </div>
+
+      {/* Navigation Footer (except on last step) */}
+      {currentStep < 3 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-border-default p-4 shadow-lg">
+          <div className="max-w-2xl mx-auto flex gap-3">
+            {currentStep > 0 && currentStep < 2 && (
+              <Button variant="ghost" onClick={handleBack} className="flex-1">
+                Back
+              </Button>
+            )}
+            {currentStep < 2 && (
+              <Button
+                variant="primary"
+                onClick={handleNext}
+                disabled={!canProceed()}
+                className="flex-1"
+              >
+                Continue
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Custom slider styles */}
+      <style jsx global>{`
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: var(--brand-indigo);
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(27, 79, 204, 0.3);
+          transition: transform 0.15s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+          transform: scale(1.1);
+        }
+
+        .slider::-webkit-slider-thumb:active {
+          transform: scale(1.05);
+        }
+
+        .slider::-moz-range-thumb {
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: var(--brand-indigo);
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 2px 8px rgba(27, 79, 204, 0.3);
+        }
+      `}</style>
+    </div>
+  )
+}

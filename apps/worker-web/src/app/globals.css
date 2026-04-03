@@ -7,15 +7,98 @@
 @layer base {
 	html,
 	body {
-		@apply bg-surface-base text-text-primary antialiased;
+		@apply bg-surface-page text-text-primary antialiased;
 	}
 
 	* {
-		@apply box-border;
+		@apply box-border border-border-default;
+	}
+
+	h1, h2, h3, h4, h5, h6 {
+		font-family: var(--font-display);
+		font-weight: var(--font-weight-semibold);
+		line-height: var(--line-height-tight);
+	}
+
+	h1 {
+		font-size: var(--text-hero);
+		font-weight: var(--font-weight-bold);
+	}
+
+	h2 {
+		font-size: var(--text-4xl);
+		font-weight: var(--font-weight-bold);
+	}
+
+	h3 {
+		font-size: var(--text-3xl);
+	}
+
+	h4 {
+		font-size: var(--text-2xl);
+	}
+
+	h5 {
+		font-size: var(--text-xl);
+	}
+
+	h6 {
+		font-size: var(--text-lg);
+	}
+
+	p {
+		font-size: var(--text-base);
+		line-height: 1.6;
+	}
+
+	code, pre {
+		font-family: var(--font-mono);
 	}
 }
 
 @layer utilities {
+	/* Fluid Typography Utilities */
+	.text-xs { font-size: var(--text-xs); }
+	.text-sm { font-size: var(--text-sm); }
+	.text-base { font-size: var(--text-base); }
+	.text-lg { font-size: var(--text-lg); }
+	.text-xl { font-size: var(--text-xl); }
+	.text-2xl { font-size: var(--text-2xl); }
+	.text-3xl { font-size: var(--text-3xl); }
+	.text-4xl { font-size: var(--text-4xl); }
+	.text-hero { font-size: var(--text-hero); }
+
+	/* Font Family Utilities */
+	.font-display {
+		font-family: var(--font-display);
+	}
+
+	.font-body {
+		font-family: var(--font-body);
+	}
+
+	.font-mono {
+		font-family: var(--font-mono);
+	}
+
+	/* Transition Utilities */
+	.transition-fast {
+		transition: all var(--transition-fast);
+	}
+
+	.transition-base {
+		transition: all var(--transition-base);
+	}
+
+	.transition-slow {
+		transition: all var(--transition-slow);
+	}
+
+	.transition-spring {
+		transition: all var(--transition-spring);
+	}
+
+	/* Animation Utilities */
 	@keyframes shake {
 		0%, 100% { transform: translateX(0); }
 		10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
@@ -33,7 +116,7 @@
 		width: 24px;
 		height: 24px;
 		border-radius: 50%;
-		background: #1B4FCC;
+		background: var(--brand-indigo);
 		cursor: pointer;
 		box-shadow: 0 2px 8px rgba(27, 79, 204, 0.3);
 		transition: all 0.2s ease;
@@ -49,7 +132,7 @@
 		height: 24px;
 		border: none;
 		border-radius: 50%;
-		background: #1B4FCC;
+		background: var(--brand-indigo);
 		cursor: pointer;
 		box-shadow: 0 2px 8px rgba(27, 79, 204, 0.3);
 		transition: all 0.2s ease;

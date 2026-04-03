@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { useClaims, UnifiedClaim } from '@/lib/ClaimsContext';
-import { useReviewQueue } from '@/lib/ReviewQueueContext';
+import { useClaims, useReviewQueue, UnifiedClaim } from '@/lib/AppContext';
 
 type FilterType = 'ALL' | 'CRITICAL' | 'HIGH' | 'MEDIUM';
 type SortType = 'SLA_DEADLINE' | 'FRAUD_SCORE' | 'TIME_SUBMITTED';
@@ -20,6 +19,72 @@ export default function ReviewQueue() {
   const [reviewerNotes, setReviewerNotes] = useState('');
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'EVIDENCE' | 'HISTORY'>('OVERVIEW');
   const [currentTime, setCurrentTime] = useState(Date.now());
+
+  // Safe date utility functions
+  const safeGetTime = (date: Date | string | undefined): number => {
+    if (!date) return 0;
+    
+    try {
+      const dateObj = date instanceof Date ? date : new Date(date);
+      
+      // Check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        return 0;
+      }
+      
+      return dateObj.getTime();
+    } catch (error) {
+      console.warn('Error parsing date:', date, error);
+      return 0;
+    }
+  };
+
+  const formatTimeLeft = (deadline: Date | string | undefined): string => {
+    if (!deadline) return 'No deadline';
+    
+    try {
+      const deadlineTime = safeGetTime(deadline);
+      if (deadlineTime === 0) return 'Invalid deadline';
+      
+      const minutesLeft = Math.floor((deadlineTime - currentTime) / (1000 * 60));
+      
+      if (minutesLeft < 0) return 'Overdue';
+      if (minutesLeft < 60) return `${minutesLeft}m`;
+      
+      const hoursLeft = Math.floor(minutesLeft / 60);
+      const remainingMinutes = minutesLeft % 60;
+      
+      if (hoursLeft < 24) {
+        return remainingMinutes > 0 ? `${hoursLeft}h ${remainingMinutes}m` : `${hoursLeft}h`;
+      }
+      
+      const daysLeft = Math.floor(hoursLeft / 24);
+      return `${daysLeft}d`;
+    } catch (error) {
+      console.warn('Error formatting time left:', deadline, error);
+      return 'Error';
+    }
+  };
+
+  const getSLAStatus = (deadline: Date | string | undefined): 'critical' | 'warning' | 'ok' => {
+    if (!deadline) return 'ok';
+    
+    try {
+      const deadlineTime = safeGetTime(deadline);
+      if (deadlineTime === 0) return 'ok';
+      
+      const minutesLeft = Math.floor((deadlineTime - currentTime) / (1000 * 60));
+      
+      if (minutesLeft < 0) return 'critical';
+      if (minutesLeft < 30) return 'critical';
+      if (minutesLeft < 120) return 'warning';
+      
+      return 'ok';
+    } catch (error) {
+      console.warn('Error getting SLA status:', deadline, error);
+      return 'ok';
+    }
+  };
 
   // Get review queue claims from context
   const claims = getReviewQueueClaims();
@@ -45,13 +110,15 @@ export default function ReviewQueue() {
       
       switch (sortBy) {
         case 'SLA_DEADLINE':
-          const aDeadline = a.slaDeadline?.getTime() || 0;
-          const bDeadline = b.slaDeadline?.getTime() || 0;
+          const aDeadline = safeGetTime(a.slaDeadline);
+          const bDeadline = safeGetTime(b.slaDeadline);
           return aDeadline - bDeadline;
         case 'FRAUD_SCORE':
           return b.fraudScore - a.fraudScore;
         case 'TIME_SUBMITTED':
-          return b.submittedDate.getTime() - a.submittedDate.getTime();
+          const aSubmitted = safeGetTime(a.submittedDate);
+          const bSubmitted = safeGetTime(b.submittedDate);
+          return bSubmitted - aSubmitted;
         default:
           return 0;
       }
@@ -73,22 +140,41 @@ export default function ReviewQueue() {
     return 'bg-green-100 text-green-800';
   };
 
-  const getSLATimeColor = (deadline?: Date) => {
+  const getSLATimeColor = (deadline?: Date | string) => {
     if (!deadline) return 'text-gray-400';
-    const minutesLeft = Math.floor((deadline.getTime() - currentTime) / (1000 * 60));
-    if (minutesLeft < 0) return 'text-red-600 font-bold';
-    if (minutesLeft < 10) return 'text-red-600';
-    if (minutesLeft < 30) return 'text-orange-600';
-    return 'text-gray-600';
+    
+    try {
+      const deadlineTime = safeGetTime(deadline);
+      if (deadlineTime === 0) return 'text-gray-400';
+      
+      const minutesLeft = Math.floor((deadlineTime - currentTime) / (1000 * 60));
+      if (minutesLeft < 0) return 'text-red-600 font-bold';
+      if (minutesLeft < 10) return 'text-red-600';
+      if (minutesLeft < 30) return 'text-orange-600';
+      return 'text-gray-600';
+    } catch (error) {
+      console.warn('Error getting SLA time color:', deadline, error);
+      return 'text-gray-400';
+    }
   };
 
-  const formatSLATime = (deadline?: Date) => {
+  const formatSLATime = (deadline?: Date | string) => {
     if (!deadline) return 'No SLA';
-    const minutesLeft = Math.floor((deadline.getTime() - currentTime) / (1000 * 60));
-    if (minutesLeft < 0) return '🔔 OVERDUE';
-    if (minutesLeft < 60) return `Due in ${minutesLeft}m`;
-    const hoursLeft = Math.floor(minutesLeft / 60);
-    return `Due in ${hoursLeft}h ${minutesLeft % 60}m`;
+    
+    try {
+      const deadlineTime = safeGetTime(deadline);
+      if (deadlineTime === 0) return 'Invalid SLA';
+      
+      const minutesLeft = Math.floor((deadlineTime - currentTime) / (1000 * 60));
+      if (minutesLeft < 0) return '🔔 OVERDUE';
+      if (minutesLeft < 60) return `Due in ${minutesLeft}m`;
+      
+      const hoursLeft = Math.floor(minutesLeft / 60);
+      return `Due in ${hoursLeft}h ${minutesLeft % 60}m`;
+    } catch (error) {
+      console.warn('Error formatting SLA time:', deadline, error);
+      return 'Error';
+    }
   };
 
   const getTriggerIcon = (type: string) => {
@@ -130,12 +216,21 @@ export default function ReviewQueue() {
     }, 100);
   };
 
-  // Stats
+  // Stats with safe date handling
   const totalPending = claims.length;
   const atRiskCount = claims.filter(c => {
     if (!c.slaDeadline) return false;
-    const minutesLeft = Math.floor((c.slaDeadline.getTime() - currentTime) / (1000 * 60));
-    return minutesLeft < 30;
+    
+    try {
+      const deadlineTime = safeGetTime(c.slaDeadline);
+      if (deadlineTime === 0) return false;
+      
+      const minutesLeft = Math.floor((deadlineTime - currentTime) / (1000 * 60));
+      return minutesLeft < 30;
+    } catch (error) {
+      console.warn('Error calculating at-risk status:', c.slaDeadline, error);
+      return false;
+    }
   }).length;
 
   // Reset queue function for testing
@@ -562,7 +657,7 @@ export default function ReviewQueue() {
                             <div>
                               <p className="font-medium text-text-primary">Claim Auto-Generated</p>
                               <p className="text-sm text-text-secondary">
-                                {Math.floor((Date.now() - selectedClaim.submittedDate.getTime()) / (1000 * 60))} minutes ago
+                                {Math.floor((Date.now() - safeGetTime(selectedClaim.submittedDate)) / (1000 * 60))} minutes ago
                               </p>
                             </div>
                           </div>

@@ -1,0 +1,70 @@
+// FILE: apps/worker-web/src/store/onboarding.ts
+// Copy this entire file to the location above after creating the directory
+
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+
+export type RiskTier = 'LOW' | 'MEDIUM' | 'HIGH'
+
+export interface OnboardingState {
+  currentStep: number
+  city: string
+  platform: string
+  hoursPerDay: number
+  weeklyEarnings: number
+  riskTier: RiskTier
+  trustScore: number
+  weeklyPremium: number
+  
+  setCurrentStep: (step: number) => void
+  setCity: (city: string) => void
+  setPlatform: (platform: string) => void
+  setHoursPerDay: (hours: number) => void
+  setWeeklyEarnings: (earnings: number) => void
+  setRiskTier: (tier: RiskTier) => void
+  setTrustScore: (score: number) => void
+  setWeeklyPremium: (premium: number) => void
+  nextStep: () => void
+  prevStep: () => void
+  reset: () => void
+}
+
+export const useOnboardingStore = create<OnboardingState>()(
+  persist(
+    (set) => ({
+      currentStep: 0,
+      city: '',
+      platform: '',
+      hoursPerDay: 6,
+      weeklyEarnings: 4200,
+      riskTier: 'MEDIUM',
+      trustScore: 80,
+      weeklyPremium: 67,
+      
+      setCurrentStep: (step) => set({ currentStep: step }),
+      setCity: (city) => set({ city }),
+      setPlatform: (platform) => set({ platform }),
+      setHoursPerDay: (hours) => set({ hoursPerDay: hours }),
+      setWeeklyEarnings: (earnings) => set({ weeklyEarnings: earnings }),
+      setRiskTier: (tier) => set({ riskTier: tier }),
+      setTrustScore: (score) => set({ trustScore: score }),
+      setWeeklyPremium: (premium) => set({ weeklyPremium: premium }),
+      
+      nextStep: () => set((state) => ({ currentStep: Math.min(state.currentStep + 1, 3) })),
+      prevStep: () => set((state) => ({ currentStep: Math.max(state.currentStep - 1, 0) })),
+      reset: () => set({ 
+        currentStep: 0, 
+        city: '', 
+        platform: '', 
+        hoursPerDay: 6, 
+        weeklyEarnings: 4200,
+        riskTier: 'MEDIUM',
+        trustScore: 80,
+        weeklyPremium: 67
+      }),
+    }),
+    {
+      name: 'suraksha-onboarding',
+    }
+  )
+)

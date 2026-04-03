@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { useClaims, UnifiedClaim } from '@/lib/ClaimsContext';
+import { useClaims } from '@/lib/AppContext';
+import { UnifiedClaim } from '@/lib/ClaimsContext';
 
 // Types
 interface KPIData {
@@ -23,171 +24,309 @@ interface FilterState {
   status: string;
   riskLevel: string;
   zone: string;
+  dateFrom: string;
+  dateTo: string;
 }
 
-// Constants
-const STATUSES = ['All Status', 'PENDING', 'APPROVED', 'REJECTED', 'INVESTIGATING', 'PAID', 'CANCELLED'];
-const RISK_LEVELS = ['All Risk Levels', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+const iconMap = {
+  trending: TrendingUp,
+  amount: CreditCard,
+  status: FileText,
+  risk: AlertTriangle,
+  time: Clock,
+  satisfaction: Shield
+};
 
-// Component
+// Status badges configuration
+const statusConfig = {
+  'PENDING': { color: 'bg-amber-100 text-amber-800 border-amber-200' },
+  'APPROVED': { color: 'bg-green-100 text-green-800 border-green-200' },
+  'REJECTED': { color: 'bg-red-100 text-red-800 border-red-200' },
+  'INVESTIGATING': { color: 'bg-blue-100 text-blue-800 border-blue-200' },
+  'PAID': { color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+  'CANCELLED': { color: 'bg-gray-100 text-gray-800 border-gray-200' },
+};
+
+const riskLevelConfig = {
+  'LOW': { color: 'bg-green-100 text-green-800 border-green-200' },
+  'MEDIUM': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  'HIGH': { color: 'bg-red-100 text-red-800 border-red-200' },
+  'CRITICAL': { color: 'bg-purple-100 text-purple-800 border-purple-200' },
+};
+
 export default function ClaimsPage() {
-  const { claims, approveClaim, rejectClaim, investigateClaim } = useClaims();
+  // State management
+  const { claims } = useClaims();
+  const [currentView, setCurrentView] = useState<'grid' | 'list'>('grid');
   const [filters, setFilters] = useState<FilterState>({
     search: '',
-    status: 'All Status',
-    riskLevel: 'All Risk Levels',
-    zone: 'All Zones',
+    status: 'all',
+    riskLevel: 'all',
+    zone: 'all',
+    dateFrom: '',
+    dateTo: ''
   });
-  const [selectedClaim, setSelectedClaim] = useState<UnifiedClaim | null>(null);
+  
+  // Modal and advanced filter state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedClaim, setSelectedClaim] = useState<UnifiedClaim | null>(null);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  // Modal handler functions
-  const openClaimDetails = useCallback((claim: UnifiedClaim) => {
+  // Filter claims based on current filters
+  const filteredClaims = useMemo(() => {
+    if (!claims || claims.length === 0) return [];
+    
+    return claims.filter(claim => {
+      // Null safety check
+      if (!claim) return false;
+      
+      try {
+        // Search filter with null safety
+        const matchesSearch = !filters.search || 
+          (claim.claimId && claim.claimId.toLowerCase().includes(filters.search.toLowerCase())) ||
+          (claim.workerId && claim.workerId.toLowerCase().includes(filters.search.toLowerCase())) ||
+          (claim.zone && claim.zone.toLowerCase().includes(filters.search.toLowerCase())) ||
+          (claim.workerName && claim.workerName.toLowerCase().includes(filters.search.toLowerCase()));
+        
+        // Status filter
+        const matchesStatus = filters.status === 'all' || claim.status === filters.status;
+        
+        // Risk level filter
+        const matchesRisk = filters.riskLevel === 'all' || claim.riskLevel === filters.riskLevel;
+        
+        // Zone filter with null safety
+        const matchesZone = filters.zone === 'all' || (claim.zone && claim.zone.includes(filters.zone));
+        
+        // Date range filters with proper date parsing and null checks
+        let matchesDateFrom = true;
+        let matchesDateTo = true;
+        
+        if (filters.dateFrom && claim.submittedDate) {
+          try {
+            const claimDate = claim.submittedDate instanceof Date 
+              ? claim.submittedDate 
+              : new Date(claim.submittedDate);
+            const filterDate = new Date(filters.dateFrom);
+            matchesDateFrom = claimDate >= filterDate;
+          } catch (e) {
+            console.warn('Invalid date format in dateFrom filter:', claim.submittedDate);
+            matchesDateFrom = true;
+          }
+        }
+        
+        if (filters.dateTo && claim.submittedDate) {
+          try {
+            const claimDate = claim.submittedDate instanceof Date 
+              ? claim.submittedDate 
+              : new Date(claim.submittedDate);
+            const filterDate = new Date(filters.dateTo);
+            matchesDateTo = claimDate <= filterDate;
+          } catch (e) {
+            console.warn('Invalid date format in dateTo filter:', claim.submittedDate);
+            matchesDateTo = true;
+          }
+        }
+        
+        return matchesSearch && matchesStatus && matchesRisk && matchesZone && 
+               matchesDateFrom && matchesDateTo;
+      } catch (error) {
+        console.error('Error filtering claim:', claim.claimId, error);
+        return false;
+      }
+    });
+  }, [claims, filters]);
+
+  // Calculate KPIs with safe data handling
+  const kpis: KPIData[] = useMemo(() => {
+    if (!claims || claims.length === 0) {
+      return [
+        { label: 'Total Claims', value: 0, change: 0, icon: 'trending' },
+        { label: 'Total Amount', value: '₹0', change: 0, icon: 'amount' },
+        { label: 'Pending Review', value: 0, change: 0, icon: 'status' },
+        { label: 'High Risk', value: 0, change: 0, icon: 'risk' },
+        { label: 'Avg Processing', value: '0h', change: 0, icon: 'time' },
+        { label: 'Success Rate', value: '0%', change: 0, icon: 'satisfaction' }
+      ];
+    }
+
+    try {
+      const totalAmount = claims.reduce((sum, claim) => {
+        const amount = claim?.amount || 0;
+        return sum + (typeof amount === 'number' ? amount : 0);
+      }, 0);
+
+      const pendingClaims = claims.filter(c => c?.status === 'PENDING').length;
+      const highRiskClaims = claims.filter(c => c?.riskLevel === 'HIGH').length;
+      const approvedClaims = claims.filter(c => c?.status === 'APPROVED').length;
+      const approvalRate = claims.length > 0 ? (approvedClaims / claims.length) * 100 : 0;
+
+      return [
+        {
+          label: 'Total Claims',
+          value: claims.length,
+          change: 8.2,
+          icon: 'trending'
+        },
+        {
+          label: 'Total Amount',
+          value: `₹${totalAmount.toLocaleString()}`,
+          change: 12.5,
+          icon: 'amount'
+        },
+        {
+          label: 'Pending Review',
+          value: pendingClaims,
+          change: -5.1,
+          icon: 'status'
+        },
+        {
+          label: 'High Risk',
+          value: highRiskClaims,
+          change: -15.3,
+          icon: 'risk'
+        },
+        {
+          label: 'Avg Processing',
+          value: '2.4h',
+          change: -8.7,
+          icon: 'time'
+        },
+        {
+          label: 'Success Rate',
+          value: `${approvalRate.toFixed(1)}%`,
+          change: 2.1,
+          icon: 'satisfaction'
+        }
+      ];
+    } catch (error) {
+      console.error('Error calculating KPIs:', error);
+      return [
+        { label: 'Total Claims', value: 'Error', change: 0, icon: 'trending' },
+        { label: 'Total Amount', value: 'Error', change: 0, icon: 'amount' },
+        { label: 'Pending Review', value: 'Error', change: 0, icon: 'status' },
+        { label: 'High Risk', value: 'Error', change: 0, icon: 'risk' },
+        { label: 'Avg Processing', value: 'Error', change: 0, icon: 'time' },
+        { label: 'Success Rate', value: 'Error', change: 0, icon: 'satisfaction' }
+      ];
+    }
+  }, [claims]);
+
+  // Safe date formatting utility
+  const formatDate = useCallback((date: Date | string | undefined): string => {
+    if (!date) return 'N/A';
+    
+    try {
+      const dateObj = date instanceof Date ? date : new Date(date);
+      
+      // Check if date is valid
+      if (isNaN(dateObj.getTime())) {
+        return 'Invalid Date';
+      }
+      
+      return dateObj.toLocaleDateString();
+    } catch (error) {
+      console.warn('Error formatting date:', date, error);
+      return 'Invalid Date';
+    }
+  }, []);
+
+  // Safe amount formatting utility
+  const formatAmount = useCallback((amount: number | undefined): string => {
+    if (typeof amount !== 'number' || isNaN(amount)) return '₹0';
+    
+    try {
+      return `₹${amount.toLocaleString()}`;
+    } catch (error) {
+      console.warn('Error formatting amount:', amount, error);
+      return '₹0';
+    }
+  }, []);
+
+  // Event handlers
+  const handleViewClaim = useCallback((claim: UnifiedClaim) => {
     setSelectedClaim(claim);
     setIsModalOpen(true);
   }, []);
 
   const closeClaimDetails = useCallback(() => {
-    setSelectedClaim(null);
     setIsModalOpen(false);
+    setSelectedClaim(null);
   }, []);
 
-  // Handle keyboard accessibility for modal
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isModalOpen) {
+  // Action handlers for claims - integrated with AppContext
+  const { approveClaim: contextApproveClaim, rejectClaim: contextRejectClaim } = useClaims();
+
+  const approveClaim = useCallback(async (claimId: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to APPROVE claim ${claimId}? This action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      await contextApproveClaim(claimId, 'Approved by admin', 'Admin User');
+      closeClaimDetails();
+      // Optional: Show success notification
+    } catch (error) {
+      console.error('Failed to approve claim:', error);
+      alert('Failed to approve claim. Please try again.');
+    }
+  }, [contextApproveClaim, closeClaimDetails]);
+
+  const rejectClaim = useCallback(async (claimId: string) => {
+    const reason = window.prompt(
+      `Please provide a reason for REJECTING claim ${claimId}:`,
+      'Does not meet policy requirements'
+    );
+    
+    if (!reason) return;
+    
+    try {
+      await contextRejectClaim(claimId, reason, 'Admin User');
+      closeClaimDetails();
+      // Optional: Show success notification
+    } catch (error) {
+      console.error('Failed to reject claim:', error);
+      alert('Failed to reject claim. Please try again.');
+    }
+  }, [contextRejectClaim, closeClaimDetails]);
+
+  const investigateClaim = useCallback(async (claimId: string) => {
+    const confirmed = window.confirm(
+      `Send claim ${claimId} for further investigation? This will flag it for detailed review.`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      // Update claim status to investigating
+      const claim = claims.find(c => c.id === claimId);
+      if (claim) {
+        // This would typically call an investigation API
+        // For now, we'll update the status in context
         closeClaimDetails();
+        alert(`Claim ${claimId} has been sent for investigation.`);
       }
-    };
-
-    if (isModalOpen) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
+    } catch (error) {
+      console.error('Failed to start investigation:', error);
+      alert('Failed to start investigation. Please try again.');
     }
+  }, [claims, closeClaimDetails]);
 
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
-    };
-  }, [isModalOpen, closeClaimDetails]);
-
-  // Calculate real-time KPIs from actual claims data
-  const kpiData = useMemo(() => {
-    const totalClaims = claims.length;
-    const todayClaims = claims.filter(c => 
-      new Date(c.submittedDate).toDateString() === new Date().toDateString()
-    ).length;
-
-    const totalAmount = claims.reduce((sum, claim) => sum + claim.amount, 0);
-    const todayAmount = claims
-      .filter(c => new Date(c.submittedDate).toDateString() === new Date().toDateString())
-      .reduce((sum, claim) => sum + claim.amount, 0);
-
-    const approvedClaims = claims.filter(c => c.status === 'APPROVED').length;
-    const approvalRate = totalClaims > 0 ? (approvedClaims / totalClaims) * 100 : 0;
-
-    const highRiskClaims = claims.filter(c => 
-      c.riskLevel === 'CRITICAL' || c.riskLevel === 'HIGH'
-    ).length;
-
-    const avgProcessingTime = claims.length > 0 
-      ? claims.reduce((sum, c) => sum + (c.processingDays || 0), 0) / claims.length 
-      : 0;
-
-    const satisfaction = 4.6; // Mock satisfaction score
-
-    return [
-      { label: 'Total Claims (Today)', value: todayClaims, change: 12.5, icon: 'trending' as const },
-      { label: 'Total Amount (Today)', value: `₹${(todayAmount / 100000).toFixed(1)}L`, change: 8.3, icon: 'amount' as const },
-      { label: 'Approved Rate', value: `${approvalRate.toFixed(1)}%`, change: 2.1, icon: 'status' as const },
-      { label: 'High Risk Claims', value: highRiskClaims, change: -5.2, icon: 'risk' as const },
-      { label: 'Avg Processing Time', value: `${avgProcessingTime.toFixed(1)}h`, change: -1.8, icon: 'time' as const },
-      { label: 'Worker Satisfaction', value: `${satisfaction}/5`, change: 3.4, icon: 'satisfaction' as const },
-    ];
-  }, [claims]);
-
-  // Dynamic zones from actual data
-  const zones = useMemo(() => {
-    const uniqueZones = [...new Set(claims.map(c => c.zone))];
-    return ['All Zones', ...uniqueZones.sort()];
-  }, [claims]);
-
-  // Filter claims based on filters
-  const filteredClaims = useMemo(() => {
-    return claims.filter((claim) => {
-      const matchesSearch =
-        claim.claimId.toLowerCase().includes(filters.search.toLowerCase()) ||
-        claim.workerName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        claim.workerId.toLowerCase().includes(filters.search.toLowerCase());
-
-      const matchesStatus = filters.status === 'All Status' || claim.status === filters.status;
-      const matchesRisk = filters.riskLevel === 'All Risk Levels' || claim.riskLevel === filters.riskLevel;
-      const matchesZone = filters.zone === 'All Zones' || claim.zone === filters.zone;
-
-      return matchesSearch && matchesStatus && matchesRisk && matchesZone;
+  const clearFilters = useCallback(() => {
+    setFilters({
+      search: '',
+      status: 'all',
+      riskLevel: 'all',
+      zone: 'all',
+      dateFrom: '',
+      dateTo: ''
     });
-  }, [filters, claims]);
+  }, []);
 
-  // Helper functions
-  const getStatusColor = (status: string): 'accent' | 'warning' | 'danger' | 'secondary' => {
-    switch (status) {
-      case 'APPROVED':
-      case 'PAID':
-        return 'accent';
-      case 'PENDING':
-        return 'secondary';
-      case 'INVESTIGATING':
-        return 'warning';
-      case 'REJECTED':
-      case 'CANCELLED':
-        return 'danger';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getRiskColor = (risk: string): 'accent' | 'warning' | 'danger' | 'secondary' => {
-    switch (risk) {
-      case 'CRITICAL':
-        return 'danger';
-      case 'HIGH':
-        return 'warning';
-      case 'MEDIUM':
-        return 'secondary';
-      case 'LOW':
-        return 'accent';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getKPIIcon = (icon: string) => {
-    switch (icon) {
-      case 'trending':
-        return '📊';
-      case 'amount':
-        return '💰';
-      case 'status':
-        return '✅';
-      case 'risk':
-        return '⚠️';
-      case 'time':
-        return '⏱️';
-      case 'satisfaction':
-        return '😊';
-      default:
-        return '📈';
-    }
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-IN', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  const handleFilterChange = useCallback((key: keyof FilterState, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
@@ -195,263 +334,337 @@ export default function ClaimsPage() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
         className="mb-8"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Claims Management</h1>
-            <p className="text-slate-400">Monitor and manage all insurance claims</p>
+            <p className="text-gray-400">Monitor and manage all claims across delivery zones</p>
           </div>
-          <div className="text-6xl">🛡️</div>
+          <div className="flex gap-3">
+            <Button
+              variant={currentView === 'grid' ? 'primary' : 'outline'}
+              onClick={() => setCurrentView('grid')}
+            >
+              Grid View
+            </Button>
+          </div>
+        </div>
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
+          {kpis.map((kpi, index) => {
+            const Icon = iconMap[kpi.icon];
+            return (
+              <motion.div
+                key={kpi.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card className="p-4 bg-slate-800 border-slate-600">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-400">{kpi.label}</p>
+                      <p className="text-2xl font-bold text-white">{kpi.value}</p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <span className={`text-sm font-medium ${
+                          kpi.change > 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          {kpi.change > 0 ? '+' : ''}{kpi.change}%
+                        </span>
+                        <span className="text-xs text-gray-500">vs last period</span>
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-slate-700">
+                      <Icon className="w-6 h-6 text-blue-400" />
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            );
+          })}
         </div>
       </motion.div>
 
-      {/* KPI Cards */}
+      {/* Filters */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="mb-6"
       >
-        {kpiData.map((kpi, index) => (
+        <Card className="p-6 bg-slate-800 border-slate-600">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div>
+              <Input
+                placeholder="Search claims..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white"
+              />
+            </div>
+            <div>
+              <Select
+                value={filters.status}
+                onValueChange={(value) => handleFilterChange('status', value)}
+                className="bg-slate-700 border-slate-600 text-white"
+                options={[
+                  { label: 'All Statuses', value: 'all' },
+                  { label: 'Pending', value: 'PENDING' },
+                  { label: 'Approved', value: 'APPROVED' },
+                  { label: 'Rejected', value: 'REJECTED' },
+                  { label: 'Investigating', value: 'INVESTIGATING' },
+                  { label: 'Paid', value: 'PAID' },
+                  { label: 'Cancelled', value: 'CANCELLED' },
+                ]}
+              />
+            </div>
+            <div>
+              <Select
+                value={filters.riskLevel}
+                onValueChange={(value) => handleFilterChange('riskLevel', value)}
+                className="bg-slate-700 border-slate-600 text-white"
+                options={[
+                  { label: 'All Risk Levels', value: 'all' },
+                  { label: 'Low Risk', value: 'LOW' },
+                  { label: 'Medium Risk', value: 'MEDIUM' },
+                  { label: 'High Risk', value: 'HIGH' },
+                  { label: 'Critical Risk', value: 'CRITICAL' },
+                ]}
+              />
+            </div>
+            <div>
+              <Select
+                value={filters.zone}
+                onValueChange={(value) => handleFilterChange('zone', value)}
+                className="bg-slate-700 border-slate-600 text-white"
+                options={[
+                  { label: 'All Zones', value: 'all' },
+                  { label: 'North Delhi', value: 'North' },
+                  { label: 'South Delhi', value: 'South' },
+                  { label: 'East Delhi', value: 'East' },
+                  { label: 'West Delhi', value: 'West' },
+                  { label: 'Gurgaon', value: 'Gurgaon' },
+                  { label: 'Noida', value: 'Noida' },
+                ]}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setFilters({
+                  search: '',
+                  status: 'all',
+                  riskLevel: 'all',
+                  zone: 'all',
+                  dateFrom: '',
+                  dateTo: ''
+                })}
+                className="border-slate-600 text-white hover:bg-slate-700"
+              >
+                Clear
+              </Button>
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700"
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                {showAdvancedFilters ? 'Hide Advanced' : 'Advanced'}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </motion.div>
+
+      {/* Advanced Filters Panel */}
+      <AnimatePresence>
+        {showAdvancedFilters && (
           <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: index * 0.1 }}
-            whileHover={{ translateY: -4 }}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-8"
           >
-            <Card className="bg-gradient-to-br from-slate-800 to-slate-700 border-slate-600 hover:border-slate-500 cursor-pointer transition-all">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
+            <Card className="bg-slate-800 border-slate-600">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-white flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-blue-400" />
+                  Advanced Filters
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Date Range */}
                   <div>
-                    <p className="text-slate-400 text-sm font-medium">{kpi.label}</p>
-                    <p className="text-white text-2xl font-bold mt-2">{kpi.value}</p>
+                    <label className="block text-sm font-medium text-white mb-2">Date From</label>
+                    <Input
+                      type="date"
+                      value={filters.dateFrom}
+                      onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
                   </div>
-                  <motion.div
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="text-3xl"
-                  >
-                    {getKPIIcon(kpi.icon)}
-                  </motion.div>
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Date To</label>
+                    <Input
+                      type="date"
+                      value={filters.dateTo}
+                      onChange={(e) => handleFilterChange('dateTo', e.target.value)}
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                  </div>
+                  
+                  {/* Amount Range */}
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">Minimum Amount</label>
+                    <Input
+                      type="number"
+                      placeholder="₹0"
+                      className="bg-slate-700 border-slate-600 text-white placeholder-slate-500"
+                    />
+                  </div>
                 </div>
-                <div
-                  className={`mt-4 text-sm font-semibold ${
-                    kpi.change >= 0 ? 'text-green-400' : 'text-red-400'
-                  }`}
-                >
-                  {kpi.change >= 0 ? '↑' : '↓'} {Math.abs(kpi.change)}% from yesterday
+                
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAdvancedFilters(false)}
+                    className="border-slate-600 text-white hover:bg-slate-700"
+                  >
+                    Apply Filters
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setFilters({
+                        search: '',
+                        status: 'all',
+                        riskLevel: 'all',
+                        zone: 'all',
+                        dateFrom: '',
+                        dateTo: ''
+                      });
+                    }}
+                    className="border-slate-600 text-slate-400 hover:bg-slate-700"
+                  >
+                    Reset All
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
-        ))}
-      </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Filters Section */}
+      {/* Claims Grid */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="mb-8"
+        transition={{ delay: 0.3 }}
       >
-        <Card className="bg-slate-800 border-slate-600">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-white flex items-center gap-2">
-              <Filter className="w-5 h-5 text-blue-400" />
-              Advanced Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
-                <Input
-                  placeholder="Search by Claim ID, Worker name..."
-                  value={filters.search}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                  className="pl-10 bg-slate-700 border-slate-600 text-white placeholder-slate-500"
-                />
-              </div>
-
-              {/* Status Filter */}
-              <Select
-                value={filters.status}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                className="bg-slate-700 border-slate-600 text-white"
-              >
-                {STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </Select>
-
-              {/* Risk Level Filter */}
-              <Select
-                value={filters.riskLevel}
-                onChange={(e) => setFilters({ ...filters, riskLevel: e.target.value })}
-                className="bg-slate-700 border-slate-600 text-white"
-              >
-                {RISK_LEVELS.map((risk) => (
-                  <option key={risk} value={risk}>
-                    {risk}
-                  </option>
-                ))}
-              </Select>
-
-              {/* Zone Filter */}
-              <Select
-                value={filters.zone}
-                onChange={(e) => setFilters({ ...filters, zone: e.target.value })}
-                className="bg-slate-700 border-slate-600 text-white"
-              >
-                {zones.map((zone) => (
-                  <option key={zone} value={zone}>
-                    {zone}
-                  </option>
-                ))}
-              </Select>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {/* Loading State */}
+          {!claims || claims.length === 0 ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-12">
+              <Shield className="w-16 h-16 text-slate-600 mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">No Claims Data</h3>
+              <p className="text-slate-400 text-center max-w-md">
+                Claims data is being loaded or there are no claims to display at the moment.
+              </p>
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Claims List - Grid View */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
-        {filteredClaims.length > 0 ? (
-          filteredClaims.map((claim, index) => (
+          ) : filteredClaims.length === 0 ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-12">
+              <Search className="w-16 h-16 text-slate-600 mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">No Claims Found</h3>
+              <p className="text-slate-400 text-center max-w-md">
+                No claims match your current filters. Try adjusting your search criteria.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => setFilters({
+                  search: '',
+                  status: 'all',
+                  riskLevel: 'all',
+                  zone: 'all',
+                  dateFrom: '',
+                  dateTo: ''
+                })}
+                className="mt-4 border-slate-600 text-white hover:bg-slate-700"
+              >
+                Clear All Filters
+              </Button>
+            </div>
+          ) : (
+            filteredClaims.map((claim, index) => (
             <motion.div
               key={claim.id}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-              whileHover={{ translateY: -4 }}
+              transition={{ delay: index * 0.05 }}
             >
-              <Card className="bg-gradient-to-br from-slate-800 to-slate-700 border-slate-600 hover:border-slate-500 cursor-pointer transition-all h-full">
-                <CardHeader className="pb-3">
+              <Card className="p-6 bg-slate-800 border-slate-600 hover:border-blue-500 transition-colors cursor-pointer">
+                <div className="space-y-4">
+                  {/* Header */}
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className="text-white text-lg">
-                        {claim.claimId}
-                      </CardTitle>
-                      <p className="text-slate-400 text-xs mt-1">{claim.workerId}</p>
+                      <h3 className="font-semibold text-white">{claim.claimId || 'Unknown ID'}</h3>
+                      <p className="text-sm text-gray-400">{claim.workerId || 'Unknown Worker'}</p>
                     </div>
-                    <Badge color={getStatusColor(claim.status)}>
-                      {claim.status}
+                    <Badge 
+                      className={
+                        statusConfig[claim.status as keyof typeof statusConfig]?.color || 
+                        'bg-gray-100 text-gray-800 border-gray-200'
+                      }
+                    >
+                      {claim.status || 'Unknown'}
                     </Badge>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-slate-400 text-xs font-semibold mb-1">WORKER</p>
-                    <p className="text-white font-medium">{claim.workerName}</p>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">AMOUNT</p>
-                      <p className="text-white font-bold text-lg">
-                        ₹{claim.amount.toLocaleString()}
-                      </p>
+                  {/* Details */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-300">{claim.zone || 'N/A'}</span>
                     </div>
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">ZONE</p>
-                      <p className="text-white font-medium">{claim.zone}</p>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-300">{formatDate(claim.submittedDate)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <CreditCard className="w-4 h-4 text-gray-400" />
+                      <span className="text-white font-medium">{formatAmount(claim.amount)}</span>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">RISK LEVEL</p>
-                      <Badge color={getRiskColor(claim.riskLevel)}>
-                        {claim.riskLevel}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">
-                        PROCESSING DAYS
-                      </p>
-                      <p className="text-white font-medium">
-                        {claim.processingDays.toFixed(1)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-slate-400 text-xs font-semibold mb-1">SUBMITTED</p>
-                    <p className="text-slate-300 text-sm">
-                      {formatDate(new Date(claim.submittedDate))}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
+                  {/* Risk Level and Action */}
+                  <div className="flex items-center justify-between">
+                    <Badge 
+                      className={
+                        riskLevelConfig[claim.riskLevel as keyof typeof riskLevelConfig]?.color ||
+                        'bg-gray-100 text-gray-800 border-gray-200'
+                      }
+                    >
+                      {claim.riskLevel ? `${claim.riskLevel} Risk` : 'Unknown Risk'}
+                    </Badge>
                     <Button
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                      variant="ghost"
                       size="sm"
-                      onClick={() => openClaimDetails(claim)}
+                      onClick={() => handleViewClaim(claim)}
+                      className="text-blue-400 hover:text-blue-300 hover:bg-slate-700"
                     >
                       View Details
                     </Button>
-                    {(claim.status === 'PENDING' || claim.status === 'INVESTIGATING') && (
-                      <>
-                        <Button
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                          size="sm"
-                          onClick={() => approveClaim(claim.id)}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                          size="sm"
-                          onClick={() => rejectClaim(claim.id)}
-                        >
-                          Reject
-                        </Button>
-                      </>
-                    )}
-                    {(claim.status === 'APPROVED' || claim.status === 'REJECTED' || 
-                      claim.status === 'PAID' || claim.status === 'CANCELLED') && (
-                      <Button
-                        className="flex-1 bg-slate-500 text-slate-300"
-                        size="sm"
-                        disabled
-                      >
-                        Completed
-                      </Button>
-                    )}
                   </div>
-                </CardContent>
+                </div>
               </Card>
             </motion.div>
           ))
-        ) : (
-          <div className="col-span-full text-center py-12">
-            <p className="text-slate-400 text-lg">
-              No claims found matching your filters
-            </p>
-          </div>
-        )}
-      </motion.div>
+          )}
+        </div>
 
-      {/* Footer Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="mt-8 text-center text-slate-400 text-sm"
-      >
-        <p>
-          Showing {filteredClaims.length} of {claims.length} claims •
+        <p className="text-center text-gray-400 text-sm">
+          Showing {filteredClaims.length} of {claims?.length || 0} claims •
           Last updated: {new Date().toLocaleTimeString()}
         </p>
       </motion.div>
@@ -475,1487 +688,115 @@ export default function ClaimsPage() {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-slate-600">
+              <div className="sticky top-0 bg-slate-800 border-b border-slate-600 p-6 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-white">{selectedClaim.claimId}</h2>
-                  <p className="text-slate-400 text-sm">
-                    Submitted {formatDate(new Date(selectedClaim.submittedDate))}
-                  </p>
+                  <h2 className="text-xl font-bold text-white">Claim Details</h2>
+                  <p className="text-gray-400">{selectedClaim.claimId}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Badge color={getStatusColor(selectedClaim.status)}>
-                    {selectedClaim.status}
-                  </Badge>
-                  <Button
-                    className="bg-slate-700 hover:bg-slate-600 text-white p-2"
-                    onClick={closeClaimDetails}
-                  >
-                    <X className="w-5 h-5" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Modal Content */}
-              <div className="p-6">
-                {/* Worker Information */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                  <Card className="bg-slate-700 border-slate-600">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <User className="w-5 h-5 text-blue-400" />
-                        Worker Information
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">NAME</p>
-                        <p className="text-white font-medium">{selectedClaim.workerName}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">WORKER ID</p>
-                        <p className="text-white font-mono">{selectedClaim.workerId}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">ZONE</p>
-                        <p className="text-white flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-green-400" />
-                          {selectedClaim.zone}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-slate-700 border-slate-600">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <CreditCard className="w-5 h-5 text-green-400" />
-                        Claim Amount
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">CLAIMED AMOUNT</p>
-                        <p className="text-white font-bold text-3xl">
-                          ₹{selectedClaim.amount.toLocaleString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">RISK LEVEL</p>
-                          <Badge color={getRiskColor(selectedClaim.riskLevel)}>
-                            {selectedClaim.riskLevel}
-                          </Badge>
-                        </div>
-                        {selectedClaim.fraudScore !== undefined && (
-                          <div>
-                            <p className="text-slate-400 text-xs font-semibold mb-1">FRAUD SCORE</p>
-                            <p className={`font-bold ${
-                              selectedClaim.fraudScore > 0.7 ? 'text-red-400' :
-                              selectedClaim.fraudScore > 0.4 ? 'text-yellow-400' : 'text-green-400'
-                            }`}>
-                              {(selectedClaim.fraudScore * 100).toFixed(0)}%
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Timeline & Processing */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                  <Card className="bg-slate-700 border-slate-600">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-amber-400" />
-                        Processing Timeline
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">SUBMITTED</p>
-                        <p className="text-white flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-blue-400" />
-                          {new Date(selectedClaim.submittedDate).toLocaleDateString('en-IN', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">PROCESSING DAYS</p>
-                        <p className="text-white font-medium">
-                          {selectedClaim.processingDays.toFixed(1)} days
-                        </p>
-                      </div>
-                      {selectedClaim.reviewedBy && (
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">REVIEWED BY</p>
-                          <p className="text-white font-medium">{selectedClaim.reviewedBy}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Incident Details */}
-                  <Card className="bg-slate-700 border-slate-600">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5 text-orange-400" />
-                        Incident Information
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {selectedClaim.incidentType && (
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">TYPE</p>
-                          <p className="text-white font-medium">{selectedClaim.incidentType}</p>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">DESCRIPTION</p>
-                        <p className="text-white text-sm leading-relaxed">
-                          {selectedClaim.description || 'No description provided'}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Review Queue Specific Information */}
-                {selectedClaim.slaDeadline && (
-                  <Card className="bg-slate-700 border-slate-600 mb-6">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <Shield className="w-5 h-5 text-purple-400" />
-                        Review Information
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">SLA DEADLINE</p>
-                          <p className="text-white font-medium">
-                            {new Date(selectedClaim.slaDeadline).toLocaleString()}
-                          </p>
-                        </div>
-                        {selectedClaim.triggeredRules && selectedClaim.triggeredRules.length > 0 && (
-                          <div>
-                            <p className="text-slate-400 text-xs font-semibold mb-1">TRIGGERED RULES</p>
-                            <div className="flex flex-wrap gap-1">
-                              {selectedClaim.triggeredRules.map((rule, index) => (
-                                <Badge key={index} color="warning" className="text-xs">
-                                  {rule.description}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {selectedClaim.priority && (
-                          <div>
-                            <p className="text-slate-400 text-xs font-semibold mb-1">PRIORITY</p>
-                            <Badge color={selectedClaim.priority === 'HIGH' ? 'danger' : 'secondary'}>
-                              {selectedClaim.priority}
-                            </Badge>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-4 border-t border-slate-600">
-                  {(selectedClaim.status === 'PENDING' || selectedClaim.status === 'INVESTIGATING') && (
-                    <>
-                      <Button
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                        onClick={() => {
-                          approveClaim(selectedClaim.id);
-                          closeClaimDetails();
-                        }}
-                      >
-                        Approve Claim
-                      </Button>
-                      <Button
-                        className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                        onClick={() => {
-                          rejectClaim(selectedClaim.id);
-                          closeClaimDetails();
-                        }}
-                      >
-                        Reject Claim
-                      </Button>
-                    </>
-                  )}
-                  <Button
-                    className="bg-slate-600 hover:bg-slate-500 text-white px-6"
-                    onClick={closeClaimDetails}
-                  >
-                    Close
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, TrendingUp, X, Calendar, Clock, User, MapPin, AlertTriangle, Shield, FileText, CreditCard } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
-import { useClaims, UnifiedClaim } from '@/lib/ClaimsContext';
-
-// Types
-interface KPIData {
-  label: string;
-  value: string | number;
-  change: number;
-  icon: 'trending' | 'amount' | 'status' | 'risk' | 'time' | 'satisfaction';
-}
-
-interface FilterState {
-  search: string;
-  status: string;
-  riskLevel: string;
-  zone: string;
-}
-
-// Constants
-const STATUSES = ['All Status', 'PENDING', 'APPROVED', 'REJECTED', 'INVESTIGATING', 'PAID', 'CANCELLED'];
-const RISK_LEVELS = ['All Risk Levels', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
-
-// Component
-export default function ClaimsPage() {
-  const { claims, approveClaim, rejectClaim, investigateClaim } = useClaims();
-  const [filters, setFilters] = useState<FilterState>({
-    search: '',
-    status: 'All Status',
-    riskLevel: 'All Risk Levels',
-    zone: 'All Zones',
-  });
-  const [selectedClaim, setSelectedClaim] = useState<UnifiedClaim | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Modal handler functions
-  const openClaimDetails = useCallback((claim: UnifiedClaim) => {
-    setSelectedClaim(claim);
-    setIsModalOpen(true);
-  }, []);
-
-  const closeClaimDetails = useCallback(() => {
-    setSelectedClaim(null);
-    setIsModalOpen(false);
-  }, []);
-
-  // Handle keyboard accessibility for modal
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isModalOpen) {
-        closeClaimDetails();
-      }
-    };
-
-    if (isModalOpen) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
-    };
-  }, [isModalOpen, closeClaimDetails]);
-
-  // Calculate real-time KPIs from actual claims data
-  const kpiData = useMemo(() => {
-    const totalClaims = claims.length;
-    const todayClaims = claims.filter(c => 
-      new Date(c.submittedDate).toDateString() === new Date().toDateString()
-    ).length;
-
-    const totalAmount = claims.reduce((sum, claim) => sum + claim.amount, 0);
-    const todayAmount = claims
-      .filter(c => new Date(c.submittedDate).toDateString() === new Date().toDateString())
-      .reduce((sum, claim) => sum + claim.amount, 0);
-
-    const approvedClaims = claims.filter(c => c.status === 'APPROVED').length;
-    const approvalRate = totalClaims > 0 ? (approvedClaims / totalClaims) * 100 : 0;
-
-    const highRiskClaims = claims.filter(c => 
-      c.riskLevel === 'CRITICAL' || c.riskLevel === 'HIGH'
-    ).length;
-
-    const avgProcessingTime = claims.length > 0 
-      ? claims.reduce((sum, c) => sum + (c.processingDays || 0), 0) / claims.length 
-      : 0;
-
-    const satisfaction = 4.6; // Mock satisfaction score
-
-    return [
-      { label: 'Total Claims (Today)', value: todayClaims, change: 12.5, icon: 'trending' as const },
-      { label: 'Total Amount (Today)', value: `₹${(todayAmount / 100000).toFixed(1)}L`, change: 8.3, icon: 'amount' as const },
-      { label: 'Approved Rate', value: `${approvalRate.toFixed(1)}%`, change: 2.1, icon: 'status' as const },
-      { label: 'High Risk Claims', value: highRiskClaims, change: -5.2, icon: 'risk' as const },
-      { label: 'Avg Processing Time', value: `${avgProcessingTime.toFixed(1)}h`, change: -1.8, icon: 'time' as const },
-      { label: 'Worker Satisfaction', value: `${satisfaction}/5`, change: 3.4, icon: 'satisfaction' as const },
-    ];
-  }, [claims]);
-
-  // Dynamic zones from actual data
-  const zones = useMemo(() => {
-    const uniqueZones = [...new Set(claims.map(c => c.zone))];
-    return ['All Zones', ...uniqueZones.sort()];
-  }, [claims]);
-
-  // Filter claims based on filters
-  const filteredClaims = useMemo(() => {
-    return claims.filter((claim) => {
-      const matchesSearch =
-        claim.claimId.toLowerCase().includes(filters.search.toLowerCase()) ||
-        claim.workerName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        claim.workerId.toLowerCase().includes(filters.search.toLowerCase());
-
-      const matchesStatus = filters.status === 'All Status' || claim.status === filters.status;
-      const matchesRisk = filters.riskLevel === 'All Risk Levels' || claim.riskLevel === filters.riskLevel;
-      const matchesZone = filters.zone === 'All Zones' || claim.zone === filters.zone;
-
-      return matchesSearch && matchesStatus && matchesRisk && matchesZone;
-    });
-  }, [filters, claims]);
-
-  // Helper functions
-  const getStatusColor = (status: string): 'accent' | 'warning' | 'danger' | 'secondary' => {
-    switch (status) {
-      case 'APPROVED':
-      case 'PAID':
-        return 'accent';
-      case 'PENDING':
-        return 'secondary';
-      case 'INVESTIGATING':
-        return 'warning';
-      case 'REJECTED':
-      case 'CANCELLED':
-        return 'danger';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getRiskColor = (risk: string): 'accent' | 'warning' | 'danger' | 'secondary' => {
-    switch (risk) {
-      case 'CRITICAL':
-        return 'danger';
-      case 'HIGH':
-        return 'warning';
-      case 'MEDIUM':
-        return 'secondary';
-      case 'LOW':
-        return 'accent';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getKPIIcon = (icon: string) => {
-    switch (icon) {
-      case 'trending':
-        return '📊';
-      case 'amount':
-        return '💰';
-      case 'status':
-        return '✅';
-      case 'risk':
-        return '⚠️';
-      case 'time':
-        return '⏱️';
-      case 'satisfaction':
-        return '😊';
-      default:
-        return '📈';
-    }
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-IN', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="mb-8"
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Claims Management</h1>
-            <p className="text-slate-400">Monitor and manage all insurance claims</p>
-          </div>
-          <div className="text-6xl">🛡️</div>
-        </div>
-      </motion.div>
-
-      {/* KPI Cards */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
-      >
-        {kpiData.map((kpi, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: index * 0.1 }}
-            whileHover={{ translateY: -4 }}
-          >
-            <Card className="bg-gradient-to-br from-slate-800 to-slate-700 border-slate-600 hover:border-slate-500 cursor-pointer transition-all">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-slate-400 text-sm font-medium">{kpi.label}</p>
-                    <p className="text-white text-2xl font-bold mt-2">{kpi.value}</p>
-                  </div>
-                  <motion.div
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="text-3xl"
-                  >
-                    {getKPIIcon(kpi.icon)}
-                  </motion.div>
-                </div>
-                <div
-                  className={`mt-4 text-sm font-semibold ${
-                    kpi.change >= 0 ? 'text-green-400' : 'text-red-400'
-                  }`}
-                >
-                  {kpi.change >= 0 ? '↑' : '↓'} {Math.abs(kpi.change)}% from yesterday
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </motion.div>
-
-      {/* Filters Section */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="mb-8"
-      >
-        <Card className="bg-slate-800 border-slate-600">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-white flex items-center gap-2">
-              <Filter className="w-5 h-5 text-blue-400" />
-              Advanced Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
-                <Input
-                  placeholder="Search by Claim ID, Worker name..."
-                  value={filters.search}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                  className="pl-10 bg-slate-700 border-slate-600 text-white placeholder-slate-500"
-                />
-              </div>
-
-              {/* Status Filter */}
-              <Select
-                value={filters.status}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                className="bg-slate-700 border-slate-600 text-white"
-              >
-                {STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </Select>
-
-              {/* Risk Level Filter */}
-              <Select
-                value={filters.riskLevel}
-                onChange={(e) => setFilters({ ...filters, riskLevel: e.target.value })}
-                className="bg-slate-700 border-slate-600 text-white"
-              >
-                {RISK_LEVELS.map((risk) => (
-                  <option key={risk} value={risk}>
-                    {risk}
-                  </option>
-                ))}
-              </Select>
-
-              {/* Zone Filter */}
-              <Select
-                value={filters.zone}
-                onChange={(e) => setFilters({ ...filters, zone: e.target.value })}
-                className="bg-slate-700 border-slate-600 text-white"
-              >
-                {zones.map((zone) => (
-                  <option key={zone} value={zone}>
-                    {zone}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Claims List - Grid View */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
-        {filteredClaims.length > 0 ? (
-          filteredClaims.map((claim, index) => (
-            <motion.div
-              key={claim.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-              whileHover={{ translateY: -4 }}
-            >
-              <Card className="bg-gradient-to-br from-slate-800 to-slate-700 border-slate-600 hover:border-slate-500 cursor-pointer transition-all h-full">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-white text-lg">
-                        {claim.claimId}
-                      </CardTitle>
-                      <p className="text-slate-400 text-xs mt-1">{claim.workerId}</p>
-                    </div>
-                    <Badge color={getStatusColor(claim.status)}>
-                      {claim.status}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-slate-400 text-xs font-semibold mb-1">WORKER</p>
-                    <p className="text-white font-medium">{claim.workerName}</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">AMOUNT</p>
-                      <p className="text-white font-bold text-lg">
-                        ₹{claim.amount.toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">ZONE</p>
-                      <p className="text-white font-medium">{claim.zone}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">RISK LEVEL</p>
-                      <Badge color={getRiskColor(claim.riskLevel)}>
-                        {claim.riskLevel}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">
-                        PROCESSING DAYS
-                      </p>
-                      <p className="text-white font-medium">
-                        {claim.processingDays.toFixed(1)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-slate-400 text-xs font-semibold mb-1">SUBMITTED</p>
-                    <p className="text-slate-300 text-sm">
-                      {formatDate(new Date(claim.submittedDate))}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                      size="sm"
-                      onClick={() => openClaimDetails(claim)}
-                    >
-                      View Details
-                    </Button>
-                    {(claim.status === 'PENDING' || claim.status === 'INVESTIGATING') && (
-                      <>
-                        <Button
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                          size="sm"
-                          onClick={() => approveClaim(claim.id)}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                          size="sm"
-                          onClick={() => rejectClaim(claim.id)}
-                        >
-                          Reject
-                        </Button>
-                      </>
-                    )}
-                    {(claim.status === 'APPROVED' || claim.status === 'REJECTED' || 
-                      claim.status === 'PAID' || claim.status === 'CANCELLED') && (
-                      <Button
-                        className="flex-1 bg-slate-500 text-slate-300"
-                        size="sm"
-                        disabled
-                      >
-                        Completed
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12">
-            <p className="text-slate-400 text-lg">
-              No claims found matching your filters
-            </p>
-          </div>
-        )}
-      </motion.div>
-
-      {/* Footer Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="mt-8 text-center text-slate-400 text-sm"
-      >
-        <p>
-          Showing {filteredClaims.length} of {claims.length} claims •
-          Last updated: {new Date().toLocaleTimeString()}
-        </p>
-      </motion.div>
-
-      {/* Claim Details Modal */}
-      <AnimatePresence>
-        {isModalOpen && selectedClaim && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            onClick={closeClaimDetails}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="bg-slate-800 rounded-xl border border-slate-600 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-slate-600">
-                <div>
-                  <h2 className="text-2xl font-bold text-white">{selectedClaim.claimId}</h2>
-                  <p className="text-slate-400 text-sm">
-                    Submitted {formatDate(new Date(selectedClaim.submittedDate))}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge color={getStatusColor(selectedClaim.status)}>
-                    {selectedClaim.status}
-                  </Badge>
-                  <Button
-                    className="bg-slate-700 hover:bg-slate-600 text-white p-2"
-                    onClick={closeClaimDetails}
-                  >
-                    <X className="w-5 h-5" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Modal Content */}
-              <div className="p-6">
-                {/* Worker Information */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                  <Card className="bg-slate-700 border-slate-600">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <User className="w-5 h-5 text-blue-400" />
-                        Worker Information
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">NAME</p>
-                        <p className="text-white font-medium">{selectedClaim.workerName}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">WORKER ID</p>
-                        <p className="text-white font-mono">{selectedClaim.workerId}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">ZONE</p>
-                        <p className="text-white flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-green-400" />
-                          {selectedClaim.zone}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-slate-700 border-slate-600">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <CreditCard className="w-5 h-5 text-green-400" />
-                        Claim Amount
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">CLAIMED AMOUNT</p>
-                        <p className="text-white font-bold text-3xl">
-                          ₹{selectedClaim.amount.toLocaleString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">RISK LEVEL</p>
-                          <Badge color={getRiskColor(selectedClaim.riskLevel)}>
-                            {selectedClaim.riskLevel}
-                          </Badge>
-                        </div>
-                        {selectedClaim.fraudScore !== undefined && (
-                          <div>
-                            <p className="text-slate-400 text-xs font-semibold mb-1">FRAUD SCORE</p>
-                            <p className={`font-bold ${
-                              selectedClaim.fraudScore > 0.7 ? 'text-red-400' :
-                              selectedClaim.fraudScore > 0.4 ? 'text-yellow-400' : 'text-green-400'
-                            }`}>
-                              {(selectedClaim.fraudScore * 100).toFixed(0)}%
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Timeline & Processing */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                  <Card className="bg-slate-700 border-slate-600">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-amber-400" />
-                        Processing Timeline
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">SUBMITTED</p>
-                        <p className="text-white flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-blue-400" />
-                          {new Date(selectedClaim.submittedDate).toLocaleDateString('en-IN', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">PROCESSING DAYS</p>
-                        <p className="text-white font-medium">
-                          {selectedClaim.processingDays.toFixed(1)} days
-                        </p>
-                      </div>
-                      {selectedClaim.reviewedBy && (
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">REVIEWED BY</p>
-                          <p className="text-white font-medium">{selectedClaim.reviewedBy}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Incident Details */}
-                  <Card className="bg-slate-700 border-slate-600">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <AlertTriangle className="w-5 h-5 text-orange-400" />
-                        Incident Information
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {selectedClaim.incidentType && (
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">TYPE</p>
-                          <p className="text-white font-medium">{selectedClaim.incidentType}</p>
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">DESCRIPTION</p>
-                        <p className="text-white text-sm leading-relaxed">
-                          {selectedClaim.description || 'No description provided'}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Review Queue Specific Information */}
-                {selectedClaim.slaDeadline && (
-                  <Card className="bg-slate-700 border-slate-600 mb-6">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <Shield className="w-5 h-5 text-purple-400" />
-                        Review Information
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">SLA DEADLINE</p>
-                          <p className="text-white font-medium">
-                            {new Date(selectedClaim.slaDeadline).toLocaleString()}
-                          </p>
-                        </div>
-                        {selectedClaim.triggeredRules && selectedClaim.triggeredRules.length > 0 && (
-                          <div>
-                            <p className="text-slate-400 text-xs font-semibold mb-1">TRIGGERED RULES</p>
-                            <div className="flex flex-wrap gap-1">
-                              {selectedClaim.triggeredRules.map((rule, index) => (
-                                <Badge key={index} color="warning" className="text-xs">
-                                  {rule.description}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {selectedClaim.priority && (
-                          <div>
-                            <p className="text-slate-400 text-xs font-semibold mb-1">PRIORITY</p>
-                            <Badge color={selectedClaim.priority === 'HIGH' ? 'danger' : 'secondary'}>
-                              {selectedClaim.priority}
-                            </Badge>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-4 border-t border-slate-600">
-                  {(selectedClaim.status === 'PENDING' || selectedClaim.status === 'INVESTIGATING') && (
-                    <>
-                      <Button
-                        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                        onClick={() => {
-                          approveClaim(selectedClaim.id);
-                          closeClaimDetails();
-                        }}
-                      >
-                        Approve Claim
-                      </Button>
-                      <Button
-                        className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                        onClick={() => {
-                          rejectClaim(selectedClaim.id);
-                          closeClaimDetails();
-                        }}
-                      >
-                        Reject Claim
-                      </Button>
-                    </>
-                  )}
-                  <Button
-                    className="bg-slate-600 hover:bg-slate-500 text-white px-6"
-                    onClick={closeClaimDetails}
-                  >
-                    Close
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="mb-8"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">Claims Management</h1>
-            <p className="text-slate-400">Monitor and manage all worker compensation claims</p>
-          </div>
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg text-white font-semibold"
-          >
-            {filteredClaims.length} Claims
-          </motion.div>
-        </div>
-      </motion.div>
-
-      {/* KPI Cards */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
-      >
-        {kpiData.map((kpi, index) => (
-          <motion.div
-            key={index}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: index * 0.1 }}
-            whileHover={{ translateY: -4 }}
-          >
-            <Card className="bg-gradient-to-br from-slate-800 to-slate-700 border-slate-600 hover:border-slate-500 cursor-pointer transition-all">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-slate-400 text-sm font-medium">{kpi.label}</p>
-                    <p className="text-white text-2xl font-bold mt-2">{kpi.value}</p>
-                  </div>
-                  <motion.div
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="text-3xl"
-                  >
-                    {getKPIIcon(kpi.icon)}
-                  </motion.div>
-                </div>
-                <div
-                  className={`mt-4 text-sm font-semibold ${
-                    kpi.change >= 0 ? 'text-green-400' : 'text-red-400'
-                  }`}
-                >
-                  {kpi.change >= 0 ? '↑' : '↓'} {Math.abs(kpi.change)}% from yesterday
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </motion.div>
-
-      {/* Filters Section */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="mb-8"
-      >
-        <Card className="bg-slate-800 border-slate-600">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-white flex items-center gap-2">
-              <Filter className="w-5 h-5 text-blue-400" />
-              Advanced Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
-                <Input
-                  placeholder="Search by Claim ID, Worker name..."
-                  value={filters.search}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                  className="pl-10 bg-slate-700 border-slate-600 text-white placeholder-slate-500"
-                />
-              </div>
-
-              {/* Status Filter */}
-              <Select
-                value={filters.status}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                className="bg-slate-700 border-slate-600 text-white"
-              >
-                {STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </Select>
-
-              {/* Risk Level Filter */}
-              <Select
-                value={filters.riskLevel}
-                onChange={(e) => setFilters({ ...filters, riskLevel: e.target.value })}
-                className="bg-slate-700 border-slate-600 text-white"
-              >
-                {RISK_LEVELS.map((risk) => (
-                  <option key={risk} value={risk}>
-                    {risk}
-                  </option>
-                ))}
-              </Select>
-
-              {/* Zone Filter */}
-              <Select
-                value={filters.zone}
-                onChange={(e) => setFilters({ ...filters, zone: e.target.value })}
-                className="bg-slate-700 border-slate-600 text-white"
-              >
-                {zones.map((zone) => (
-                  <option key={zone} value={zone}>
-                    {zone}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Claims List - Grid View */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-      >
-            {filteredClaims.length > 0 ? (
-              filteredClaims.map((claim, index) => (
-                <motion.div
-                  key={claim.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  whileHover={{ translateY: -4 }}
-                >
-                  <Card className="bg-gradient-to-br from-slate-800 to-slate-700 border-slate-600 hover:border-slate-500 cursor-pointer transition-all h-full">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-white text-lg">
-                            {claim.claimId}
-                          </CardTitle>
-                          <p className="text-slate-400 text-xs mt-1">{claim.workerId}</p>
-                        </div>
-                        <Badge color={getStatusColor(claim.status)}>
-                          {claim.status}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">WORKER</p>
-                        <p className="text-white font-medium">{claim.workerName}</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">AMOUNT</p>
-                          <p className="text-white font-bold text-lg">
-                            ₹{claim.amount.toLocaleString()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">ZONE</p>
-                          <p className="text-white font-medium">{claim.zone}</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">RISK LEVEL</p>
-                          <Badge color={getRiskColor(claim.riskLevel)}>
-                            {claim.riskLevel}
-                          </Badge>
-                        </div>
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">
-                            PROCESSING DAYS
-                          </p>
-                          <p className="text-white font-semibold">
-                            {claim.processingDays.toFixed(1)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">INCIDENT TYPE</p>
-                        <p className="text-white font-medium">{claim.incidentType}</p>
-                      </div>
-
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">
-                          FRAUD SCORE
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <div className="w-full bg-slate-600 rounded-full h-2 mr-2">
-                            <div
-                              className={`h-2 rounded-full ${
-                                claim.fraudScore > 0.7
-                                  ? 'bg-red-500'
-                                  : claim.fraudScore > 0.4
-                                    ? 'bg-orange-500'
-                                    : 'bg-green-500'
-                              }`}
-                              style={{ width: `${claim.fraudScore * 100}%` }}
-                            />
-                          </div>
-                          <span className="text-white font-semibold text-sm">
-                            {(claim.fraudScore * 100).toFixed(0)}%
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-600">
-                        <p className="text-slate-400 text-xs font-semibold mb-2">DESCRIPTION</p>
-                        <p className="text-slate-300 text-sm line-clamp-2">
-                          {claim.description}
-                        </p>
-                      </div>
-
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                          size="sm"
-                          onClick={() => openClaimDetails(claim)}
-                        >
-                          View Details
-                        </Button>
-                        {(claim.status === 'PENDING' || claim.status === 'INVESTIGATING') && (
-                          <>
-                            <Button
-                              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                              size="sm"
-                              onClick={() => approveClaim(claim.id)}
-                            >
-                              Approve
-                            </Button>
-                            <Button
-                              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                              size="sm"
-                              onClick={() => rejectClaim(claim.id)}
-                            >
-                              Reject
-                            </Button>
-                          </>
-                        )}
-                        {(claim.status === 'APPROVED' || claim.status === 'REJECTED' || 
-                          claim.status === 'PAID' || claim.status === 'CANCELLED') && (
-                          <Button
-                            className="flex-1 bg-slate-500 text-slate-300"
-                            size="sm"
-                            disabled
-                          >
-                            Completed
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))
-            ) : (
-              <div className="col-span-full text-center py-12">
-                <p className="text-slate-400 text-lg">
-                  No claims found matching your filters
-                </p>
-              </div>
-            )}
-          </motion.div>
-
-      {/* Footer Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-        className="mt-8 text-center text-slate-400 text-sm"
-      >
-        <p>
-          Showing {filteredClaims.length} of {claims.length} claims •
-          Last updated: {new Date().toLocaleTimeString()}
-        </p>
-      </motion.div>
-
-      {/* Claim Details Modal */}
-      <AnimatePresence>
-        {isModalOpen && selectedClaim && (
-          <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={closeClaimDetails}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="bg-slate-800 rounded-xl border border-slate-600 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-600">
-              <div>
-                <h2 className="text-2xl font-bold text-white">{selectedClaim.claimId}</h2>
-                <p className="text-slate-400 text-sm">
-                  Submitted {formatDate(new Date(selectedClaim.submittedDate))}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Badge color={getStatusColor(selectedClaim.status)}>
-                  {selectedClaim.status}
-                </Badge>
                 <Button
-                  className="bg-slate-700 hover:bg-slate-600 text-white p-2"
+                  variant="ghost"
+                  size="sm"
                   onClick={closeClaimDetails}
+                  className="text-gray-400 hover:text-white"
                 >
                   <X className="w-5 h-5" />
                 </Button>
               </div>
-            </div>
 
-            {/* Modal Content */}
-            <div className="p-6">
-              {/* Worker Information */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <Card className="bg-slate-700 border-slate-600">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <User className="w-5 h-5 text-blue-400" />
-                      Worker Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">NAME</p>
-                      <p className="text-white font-medium">{selectedClaim.workerName}</p>
+              {/* Modal Content */}
+              <div className="p-6 space-y-6">
+                {/* Basic Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card className="p-4 bg-slate-700 border-slate-600">
+                    <h3 className="text-lg font-semibold text-white mb-3">Basic Information</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Worker ID:</span>
+                        <span className="text-white">{selectedClaim.workerId || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Claim ID:</span>
+                        <span className="text-white font-mono">{selectedClaim.claimId || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Worker:</span>
+                        <span className="text-white">{selectedClaim.workerName || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Zone:</span>
+                        <span className="text-white">{selectedClaim.zone || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Submitted:</span>
+                        <span className="text-white">{formatDate(selectedClaim.submittedDate)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Amount:</span>
+                        <span className="text-white font-semibold">{formatAmount(selectedClaim.amount)}</span>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">WORKER ID</p>
-                      <p className="text-white font-mono">{selectedClaim.workerId}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">ZONE</p>
-                      <p className="text-white flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-green-400" />
-                        {selectedClaim.zone}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                  </Card>
 
-                <Card className="bg-slate-700 border-slate-600">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <CreditCard className="w-5 h-5 text-green-400" />
-                      Claim Amount
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">CLAIMED AMOUNT</p>
-                      <p className="text-white font-bold text-3xl">
-                        ₹{selectedClaim.amount.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4">
+                  <Card className="p-4 bg-slate-700 border-slate-600">
+                    <h3 className="text-lg font-semibold text-white mb-3">Status & Risk</h3>
+                    <div className="space-y-3">
                       <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">RISK LEVEL</p>
-                        <Badge color={getRiskColor(selectedClaim.riskLevel)}>
-                          {selectedClaim.riskLevel}
+                        <span className="text-gray-400 block mb-1">Current Status</span>
+                        <Badge 
+                          className={
+                            statusConfig[selectedClaim.status as keyof typeof statusConfig]?.color || 
+                            'bg-gray-100 text-gray-800 border-gray-200'
+                          }
+                        >
+                          {selectedClaim.status || 'Unknown'}
                         </Badge>
                       </div>
-                      {selectedClaim.fraudScore !== undefined && (
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">FRAUD SCORE</p>
-                          <p className={`font-bold ${
-                            selectedClaim.fraudScore > 0.7 ? 'text-red-400' :
-                            selectedClaim.fraudScore > 0.4 ? 'text-yellow-400' : 'text-green-400'
-                          }`}>
-                            {(selectedClaim.fraudScore * 100).toFixed(0)}%
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Timeline & Processing */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <Card className="bg-slate-700 border-slate-600">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-amber-400" />
-                      Processing Timeline
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">SUBMITTED</p>
-                      <p className="text-white flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-blue-400" />
-                        {new Date(selectedClaim.submittedDate).toLocaleDateString('en-IN', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">PROCESSING DAYS</p>
-                      <p className="text-white font-medium">
-                        {selectedClaim.processingDays.toFixed(1)} days
-                      </p>
-                    </div>
-                    {selectedClaim.reviewedBy && (
                       <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">REVIEWED BY</p>
-                        <p className="text-white font-medium">{selectedClaim.reviewedBy}</p>
+                        <span className="text-gray-400 block mb-1">Risk Level</span>
+                        <Badge 
+                          className={
+                            riskLevelConfig[selectedClaim.riskLevel as keyof typeof riskLevelConfig]?.color ||
+                            'bg-gray-100 text-gray-800 border-gray-200'
+                          }
+                        >
+                          {selectedClaim.riskLevel ? `${selectedClaim.riskLevel} Risk` : 'Unknown Risk'}
+                        </Badge>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Incident Details */}
-                <Card className="bg-slate-700 border-slate-600">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-orange-400" />
-                      Incident Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {selectedClaim.incidentType && (
                       <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">TYPE</p>
-                        <p className="text-white font-medium">{selectedClaim.incidentType}</p>
+                        <span className="text-gray-400 block mb-1">Processing Time</span>
+                        <span className="text-white">2.3 hours</span>
                       </div>
-                    )}
-                    <div>
-                      <p className="text-slate-400 text-xs font-semibold mb-1">DESCRIPTION</p>
-                      <p className="text-white text-sm leading-relaxed">
-                        {selectedClaim.description || 'No description provided'}
-                      </p>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  </Card>
+                </div>
 
-              {/* Review Queue Specific Information */}
-              {selectedClaim.slaDeadline && (
-                <Card className="bg-slate-700 border-slate-600 mb-6">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Shield className="w-5 h-5 text-purple-400" />
-                      Review Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-slate-400 text-xs font-semibold mb-1">SLA DEADLINE</p>
-                        <p className="text-white font-medium">
-                          {new Date(selectedClaim.slaDeadline).toLocaleString()}
-                        </p>
-                      </div>
-                      {selectedClaim.triggeredRules && selectedClaim.triggeredRules.length > 0 && (
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">TRIGGERED RULES</p>
-                          <div className="flex flex-wrap gap-1">
-                            {selectedClaim.triggeredRules.map((rule, index) => (
-                              <Badge key={index} color="warning" className="text-xs">
-                                {rule.description}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {selectedClaim.priority && (
-                        <div>
-                          <p className="text-slate-400 text-xs font-semibold mb-1">PRIORITY</p>
-                          <Badge color={selectedClaim.priority === 'HIGH' ? 'danger' : 'secondary'}>
-                            {selectedClaim.priority}
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-4 border-t border-slate-600">
-                {(selectedClaim.status === 'PENDING' || selectedClaim.status === 'INVESTIGATING') && (
-                  <>
-                    <Button
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => {
-                        approveClaim(selectedClaim.id);
-                        closeClaimDetails();
-                      }}
+                {/* Action Buttons - Only show for non-completed cases */}
+                {selectedClaim.status === 'PENDING' && (
+                  <div className="flex gap-3 pt-4 border-t border-slate-600">
+                    <Button 
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => approveClaim(selectedClaim.claimId)}
                     >
                       Approve Claim
                     </Button>
-                    <Button
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                      onClick={() => {
-                        rejectClaim(selectedClaim.id);
-                        closeClaimDetails();
-                      }}
+                    <Button 
+                      variant="outline" 
+                      className="border-red-600 text-red-400 hover:bg-red-600 hover:text-white"
+                      onClick={() => rejectClaim(selectedClaim.claimId)}
                     >
                       Reject Claim
                     </Button>
-                  </>
+                    <Button 
+                      variant="outline" 
+                      className="border-yellow-600 text-yellow-400 hover:bg-yellow-600 hover:text-white"
+                      onClick={() => investigateClaim(selectedClaim.claimId)}
+                    >
+                      Request Investigation
+                    </Button>
+                  </div>
                 )}
-                <Button
-                  className="bg-slate-600 hover:bg-slate-500 text-white px-6"
-                  onClick={closeClaimDetails}
-                >
-                  Close
-                </Button>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

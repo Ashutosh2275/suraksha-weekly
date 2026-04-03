@@ -1,152 +1,106 @@
-import React from 'react';
+'use client'
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'primary' | 'secondary' | 'accent' | 'danger' | 'warning' | 'success' | 'neutral';
-  size?: 'sm' | 'md';
-  status?: 'ACTIVE' | 'LAPSED' | 'IN_REVIEW' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CRITICAL' | 'PENDING';
-  dot?: boolean;
-  pulse?: boolean;
-  children: React.ReactNode;
+import { motion } from 'framer-motion'
+
+export type BadgeStatus = 
+  | 'ACTIVE' 
+  | 'LAPSED' 
+  | 'IN_REVIEW' 
+  | 'APPROVED' 
+  | 'PAID' 
+  | 'REJECTED' 
+  | 'INITIATED' 
+  | 'PENDING'
+
+export interface BadgeProps {
+  status: BadgeStatus
+  size?: 'sm' | 'md'
+  dot?: boolean
+  className?: string
 }
 
-export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
-  ({ 
-    variant, 
-    size = 'md', 
-    status, 
-    dot = false, 
-    pulse = false,
-    children, 
-    className = '', 
-    ...props 
-  }, ref) => {
-    // Status-based styling takes precedence over variant
-    const getStatusStyles = () => {
-      switch (status) {
-        case 'ACTIVE':
-          return {
-            bg: 'bg-green-100 text-green-800',
-            dotColor: 'bg-green-500',
-            pulse: false
-          };
-        case 'LAPSED':
-          return {
-            bg: 'bg-gray-100 text-gray-800',
-            dotColor: 'bg-gray-500',
-            pulse: false
-          };
-        case 'IN_REVIEW':
-          return {
-            bg: 'bg-amber-100 text-amber-800',
-            dotColor: 'bg-amber-500',
-            pulse: false
-          };
-        case 'APPROVED':
-          return {
-            bg: 'bg-blue-100 text-blue-800',
-            dotColor: 'bg-blue-500',
-            pulse: false
-          };
-        case 'PAID':
-          return {
-            bg: 'bg-green-100 text-green-800',
-            dotColor: 'bg-green-500',
-            pulse: false
-          };
-        case 'REJECTED':
-          return {
-            bg: 'bg-red-100 text-red-800',
-            dotColor: 'bg-red-500',
-            pulse: false
-          };
-        case 'CRITICAL':
-          return {
-            bg: 'bg-red-100 text-red-800',
-            dotColor: 'bg-red-500',
-            pulse: true
-          };
-        case 'PENDING':
-          return {
-            bg: 'bg-gray-100 text-gray-800',
-            dotColor: 'bg-gray-500',
-            pulse: false
-          };
-        default:
-          return null;
-      }
-    };
+const statusConfig: Record<BadgeStatus, { bg: string; text: string; border: string; shouldPulse: boolean }> = {
+  ACTIVE: {
+    bg: 'bg-brand-emerald-light',
+    text: 'text-brand-emerald',
+    border: 'border-brand-emerald/20',
+    shouldPulse: false,
+  },
+  PAID: {
+    bg: 'bg-brand-emerald-light',
+    text: 'text-brand-emerald',
+    border: 'border-brand-emerald/20',
+    shouldPulse: false,
+  },
+  IN_REVIEW: {
+    bg: 'bg-brand-amber-light',
+    text: 'text-text-amber',
+    border: 'border-brand-amber/20',
+    shouldPulse: true,
+  },
+  PENDING: {
+    bg: 'bg-brand-amber-light',
+    text: 'text-text-amber',
+    border: 'border-brand-amber/20',
+    shouldPulse: false,
+  },
+  INITIATED: {
+    bg: 'bg-brand-amber-light',
+    text: 'text-text-amber',
+    border: 'border-brand-amber/20',
+    shouldPulse: true,
+  },
+  APPROVED: {
+    bg: 'bg-brand-indigo-light',
+    text: 'text-brand-indigo',
+    border: 'border-brand-indigo/20',
+    shouldPulse: false,
+  },
+  REJECTED: {
+    bg: 'bg-brand-red-light',
+    text: 'text-brand-red',
+    border: 'border-brand-red/20',
+    shouldPulse: false,
+  },
+  LAPSED: {
+    bg: 'bg-gray-100',
+    text: 'text-gray-600',
+    border: 'border-gray-200',
+    shouldPulse: false,
+  },
+}
 
-    const getVariantStyles = () => {
-      switch (variant) {
-        case 'primary':
-          return {
-            bg: 'bg-brand-primary/10 text-brand-primary',
-            dotColor: 'bg-brand-primary'
-          };
-        case 'secondary':
-          return {
-            bg: 'bg-brand-secondary/10 text-brand-secondary',
-            dotColor: 'bg-brand-secondary'
-          };
-        case 'accent':
-          return {
-            bg: 'bg-brand-accent/10 text-brand-accent',
-            dotColor: 'bg-brand-accent'
-          };
-        case 'danger':
-          return {
-            bg: 'bg-brand-danger/10 text-brand-danger',
-            dotColor: 'bg-brand-danger'
-          };
-        case 'warning':
-          return {
-            bg: 'bg-brand-warning/10 text-brand-warning',
-            dotColor: 'bg-brand-warning'
-          };
-        case 'success':
-          return {
-            bg: 'bg-green-100 text-green-800',
-            dotColor: 'bg-green-500'
-          };
-        case 'neutral':
-        default:
-          return {
-            bg: 'bg-gray-100 text-gray-800',
-            dotColor: 'bg-gray-500'
-          };
-      }
-    };
-
-    const statusStyles = getStatusStyles();
-    const variantStyles = getVariantStyles();
-    const styles = statusStyles || variantStyles;
-    const shouldPulse = status === 'CRITICAL' || pulse;
-
-    const baseStyles = 'inline-flex items-center font-medium rounded-full';
-    
-    const sizeStyles = {
-      sm: 'px-2 py-0.5 text-xs',
-      md: 'px-3 py-1 text-sm'
-    };
-
-    const dotStyles = dot ? 'gap-1.5' : '';
-    const pulseAnimation = shouldPulse ? 'animate-pulse' : '';
-
-    return (
-      <span
-        ref={ref}
-        className={`${baseStyles} ${styles.bg} ${sizeStyles[size]} ${dotStyles} ${pulseAnimation} ${className}`}
-        {...props}
-      >
-        {dot && (
-          <span 
-            className={`w-1.5 h-1.5 rounded-full ${styles.dotColor} ${shouldPulse ? 'animate-pulse' : ''}`}
-          />
-        )}
-        {children}
-      </span>
-    );
+export function Badge({ status, size = 'md', dot = false, className = '' }: BadgeProps) {
+  const config = statusConfig[status]
+  const sizeStyles = {
+    sm: 'px-2 py-0.5 text-xs',
+    md: 'px-3 py-1 text-sm',
   }
-);
 
-Badge.displayName = 'Badge';
+  const showPulse = dot && config.shouldPulse
+
+  return (
+    <span
+      className={`
+        inline-flex items-center gap-1.5 font-medium font-display rounded-full border
+        ${config.bg} ${config.text} ${config.border}
+        ${sizeStyles[size]}
+        ${className}
+      `}
+    >
+      {dot && (
+        <span className="relative flex h-2 w-2">
+          {showPulse && (
+            <motion.span
+              className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${config.bg.replace('-light', '')}`}
+              animate={{ scale: [1, 1.5, 1], opacity: [0.75, 0, 0.75] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          )}
+          <span className={`relative inline-flex rounded-full h-2 w-2 ${config.bg.replace('-light', '')}`} />
+        </span>
+      )}
+      {status.replace(/_/g, ' ')}
+    </span>
+  )
+}

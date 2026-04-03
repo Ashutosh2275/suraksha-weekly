@@ -1,9 +1,42 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, Badge, Button } from '@/components/ui';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import { useDashboard, useActiveAlert } from '@/lib/queries';
+
+// Loading component
+function DashboardLoading() {
+  return (
+    <div className="min-h-screen bg-surface-base p-4 space-y-6 animate-pulse">
+      <div className="h-32 bg-surface-card rounded-xl"></div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="h-24 bg-surface-card rounded-xl"></div>
+        <div className="h-24 bg-surface-card rounded-xl"></div>
+      </div>
+      <div className="h-48 bg-surface-card rounded-xl"></div>
+    </div>
+  );
+}
+
+// Error component
+function DashboardError({ error }: { error: Error }) {
+  return (
+    <div className="min-h-screen bg-surface-base p-4 flex items-center justify-center">
+      <Card className="p-6 max-w-md text-center">
+        <h2 className="text-lg font-semibold text-red-600 mb-2">
+          Unable to load dashboard
+        </h2>
+        <p className="text-text-muted mb-4">
+          Please check your connection and try again.
+        </p>
+        <Button onClick={() => window.location.reload()}>
+          Retry
+        </Button>
+      </Card>
+    </div>
+  );
+}
 
 // Mock data - would come from API in production
 const WORKER_DATA = {
@@ -49,7 +82,14 @@ const NAV_ITEMS = [
 ];
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState('home');
+  const { data: dashboardData, isLoading, error } = useDashboard();
+  const { data: activeAlert } = useActiveAlert();
+  
+  if (isLoading) return <DashboardLoading />;
+  if (error) return <DashboardError error={error as Error} />;
+  if (!dashboardData) return <DashboardError error={new Error('No data available')} />;
+
+  const { policy } = dashboardData;
   
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -67,14 +107,40 @@ export default function DashboardPage() {
   };
 
   const getDaysUntilExpiry = () => {
-    // Mock: would calculate from actual date
-    return 2; // 2 days remaining
+    // Calculate from actual policy data
+    const expiryDate = new Date(policy.expiryDate);
+    const today = new Date();
+    const timeDiff = expiryDate.getTime() - today.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    return Math.max(0, daysDiff);
   };
 
   const getStatusConfig = () => {
-    switch (WORKER_DATA.protectionStatus) {
-      case 'ACTIVE':
-        return {
+    const daysLeft = getDaysUntilExpiry();
+    
+    if (daysLeft <= 0) {
+      return {
+        color: 'bg-red-500' as const,
+        textColor: 'text-red-600' as const,
+        bgColor: 'bg-red-50' as const,
+        label: 'LAPSED' as const,
+      };
+    } else if (daysLeft <= 2) {
+      return {
+        color: 'bg-amber-500' as const,
+        textColor: 'text-amber-600' as const,
+        bgColor: 'bg-amber-50' as const,
+        label: 'EXPIRING' as const,
+      };
+    } else {
+      return {
+        color: 'bg-green-500' as const,
+        textColor: 'text-green-600' as const,
+        bgColor: 'bg-green-50' as const,
+        label: 'ACTIVE' as const,
+      };
+    }
+  };
           color: 'emerald',
           glowColor: 'rgba(0, 200, 150, 0.3)',
           text: "You're protected this week",
@@ -105,7 +171,7 @@ export default function DashboardPage() {
           {/* Greeting */}
           <div className="mb-6">
             <h1 className="font-display text-3xl font-semibold text-text-primary mb-1">
-              {getGreeting()}, {WORKER_DATA.name} 👋
+              {getGreeting()}, {policy.workerName} 👋
             </h1>
             <p className="text-text-secondary">{getCurrentDate()}</p>
           </div>
@@ -128,7 +194,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-4">
                 <motion.div
                   animate={
-                    WORKER_DATA.protectionStatus === 'ACTIVE'
+                    statusConfig.label === 'ACTIVE'
                       ? {
                           filter: [
                             'drop-shadow(0 0 8px rgba(0, 200, 150, 0.6))',
@@ -181,9 +247,9 @@ export default function DashboardPage() {
                     {statusConfig.text}
                   </h2>
                   <p className="text-indigo-200 text-sm">
-                    Coverage ends {WORKER_DATA.coverageEndsDate} ·{' '}
+                    Coverage ends {policy.expiryDate} ·{' '}
                     <span className="font-mono">
-                      ₹{WORKER_DATA.protectedAmount.toLocaleString('en-IN')}
+                      ₹{policy.protectedAmount.toLocaleString('en-IN')}
                     </span>{' '}
                     protected
                   </p>
@@ -207,7 +273,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Alert Banner */}
-      {WORKER_DATA.hasActiveTrigger && (
+      {activeAlert && (
         <motion.div
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1 }}
@@ -221,12 +287,12 @@ export default function DashboardPage() {
                   transition={{ duration: 2, repeat: Infinity }}
                   className="text-2xl"
                 >
-                  {WORKER_DATA.triggerEvent.type === 'rain' && '🌧️'}
-                  {WORKER_DATA.triggerEvent.type === 'heat' && '🔥'}
-                  {WORKER_DATA.triggerEvent.type === 'aqi' && '💨'}
+                  {activeAlert.type === 'rain' && '🌧️'}
+                  {activeAlert.type === 'heat' && '🔥'}
+                  {activeAlert.type === 'aqi' && '💨'}
                 </motion.div>
                 <p className="text-text-primary font-medium">
-                  {WORKER_DATA.triggerEvent.message}
+                  {activeAlert.message}
                 </p>
               </div>
               <button className="text-brand-primary font-semibold whitespace-nowrap flex items-center gap-1 hover:text-brand-primary-hover transition-colors">
@@ -282,8 +348,8 @@ export default function DashboardPage() {
                     initial={{ width: 0 }}
                     animate={{
                       width: `${
-                        (WORKER_DATA.protectedAmount /
-                          WORKER_DATA.weeklyAverage) *
+                        (policy.protectedAmount /
+                          policy.weeklyAverage) *
                         100
                       }%`,
                     }}
