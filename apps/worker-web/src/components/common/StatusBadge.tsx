@@ -11,6 +11,11 @@ const STATUS_CLASSES: Record<string, string> = {
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
+  // Don't render PAID status badges
+  if (status.toUpperCase() === 'PAID') {
+    return null;
+  }
+
   const normalized = status.toUpperCase();
   const classes = STATUS_CLASSES[normalized] || "bg-slate-100 text-slate-700";
 

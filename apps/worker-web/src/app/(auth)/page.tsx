@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui'
+import { useAuth } from '@/contexts/AuthContext'
 
 const VALUE_PROPS = [
   'When rain stops deliveries — we pay you.',
@@ -11,6 +13,8 @@ const VALUE_PROPS = [
 ]
 
 export default function AuthPage() {
+  const { login } = useAuth()
+  const router = useRouter()
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
@@ -109,8 +113,9 @@ export default function AuthPage() {
       return
     }
 
-    // Success - redirect
-    window.location.href = '/dashboard'
+    // Success - log in and redirect
+    login(phone)
+    router.push('/dashboard')
   }
 
   const handleResendOtp = async () => {
@@ -265,10 +270,10 @@ export default function AuthPage() {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <h2 className="font-display font-semibold text-[22px] text-text-primary mb-2">
+                  <h2 className="font-display font-semibold text-[22px] text-primary mb-2">
                     Enter your mobile number
                   </h2>
-                  <p className="text-sm font-body text-text-muted mb-8">
+                  <p className="text-sm font-body text-muted mb-8">
                     We'll send a 6-digit code to verify
                   </p>
 
@@ -276,7 +281,7 @@ export default function AuthPage() {
                     <div>
                       <div className="flex items-center gap-3 h-14 px-4 rounded-xl border-2 border-border-default bg-white focus-within:border-brand-indigo focus-within:shadow-[0_0_0_3px_rgba(27,79,204,0.12)] transition-all">
                         <span className="text-xl">🇮🇳</span>
-                        <span className="px-2 py-1 bg-gray-100 rounded text-xs font-medium text-text-secondary">
+                        <span className="px-2 py-1 bg-gray-100 rounded text-xs font-medium text-secondary">
                           +91
                         </span>
                         <input
@@ -285,7 +290,7 @@ export default function AuthPage() {
                           value={phone}
                           onChange={(e) => setPhone(formatPhone(e.target.value.replace(/\D/g, '')))}
                           placeholder="98765 43210"
-                          className="flex-1 text-lg font-display bg-transparent border-none outline-none text-text-primary placeholder:text-text-muted"
+                          className="flex-1 text-lg font-display bg-transparent border-none outline-none text-primary placeholder:text-muted"
                           autoFocus
                           style={{ fontSize: '18px' }}
                         />
@@ -341,7 +346,7 @@ export default function AuthPage() {
                       setOtp(['', '', '', '', '', ''])
                       setError('')
                     }}
-                    className="mb-6 text-sm text-text-brand hover:text-brand-indigo-dark transition-colors flex items-center gap-1 font-medium"
+                    className="mb-6 text-sm text-brand hover:text-brand-indigo-dark transition-colors flex items-center gap-1 font-medium"
                   >
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                       <path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -349,10 +354,10 @@ export default function AuthPage() {
                     Change number
                   </button>
 
-                  <h2 className="font-display font-semibold text-[22px] text-text-primary mb-2">
+                  <h2 className="font-display font-semibold text-[22px] text-primary mb-2">
                     Enter the code sent to
                   </h2>
-                  <p className="text-sm font-body text-text-secondary mb-8">
+                  <p className="text-sm font-body text-secondary mb-8">
                     +91 {phone}
                   </p>
 
@@ -362,7 +367,9 @@ export default function AuthPage() {
                         {otp.map((digit, index) => (
                           <motion.input
                             key={index}
-                            ref={(el) => (otpRefs.current[index] = el)}
+                            ref={(el) => {
+                              otpRefs.current[index] = el;
+                            }}
                             type="text"
                             inputMode="numeric"
                             maxLength={1}
@@ -373,6 +380,7 @@ export default function AuthPage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.04 }}
+                            style={{ color: 'var(--text-primary)' }}
                             className={`
                               w-11 h-14 text-center text-2xl font-bold font-display
                               rounded-md border-2 transition-all outline-none
@@ -413,9 +421,9 @@ export default function AuthPage() {
 
                     <div className="text-center">
                       {resendTimer > 0 ? (
-                        <p className="text-sm text-text-muted">
+                        <p className="text-sm text-muted">
                           Resend in{' '}
-                          <span className="font-mono font-semibold text-text-secondary">
+                          <span className="font-mono font-semibold text-secondary">
                             0:{resendTimer.toString().padStart(2, '0')}
                           </span>
                         </p>
@@ -423,7 +431,7 @@ export default function AuthPage() {
                         <button
                           type="button"
                           onClick={handleResendOtp}
-                          className="text-sm text-text-brand hover:text-brand-indigo-dark font-semibold transition-colors"
+                          className="text-sm text-brand hover:text-brand-indigo-dark font-semibold transition-colors"
                         >
                           Resend OTP
                         </button>

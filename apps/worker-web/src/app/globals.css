@@ -7,11 +7,15 @@
 @layer base {
 	html,
 	body {
-		@apply bg-surface-page text-text-primary antialiased;
+		background-color: var(--surface-page);
+		color: var(--text-primary);
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
 	}
 
 	* {
-		@apply box-border border-border-default;
+		box-sizing: border-box;
+		border-color: var(--border-default);
 	}
 
 	h1, h2, h3, h4, h5, h6 {

@@ -6,6 +6,12 @@ const config: Config = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  safelist: [
+    // Surface colors
+    { pattern: /^bg-surface-(page|card|card-hover|dark|dark-2|subtle)$/ },
+    // Border colors
+    { pattern: /^border-(default|strong|brand|subtle)$/ },
+  ],
   theme: {
     extend: {
       colors: {

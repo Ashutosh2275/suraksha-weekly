@@ -1,15 +1,15 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { ReactNode, InputHTMLAttributes, forwardRef } from 'react'
 
-export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
+export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'className'> {
   label?: string
   error?: string
   helper?: string
   prefix?: ReactNode
   suffix?: ReactNode
   size?: 'sm' | 'md' | 'lg'
+  className?: string
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -35,7 +35,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             </div>
           )}
 
-          <motion.input
+          <input
             ref={ref}
             className={`
               w-full bg-surface-card border rounded-md font-body
@@ -53,9 +53,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               }
               ${className}
             `}
-            style={{ fontSize: Math.max(parseInt(sizeStyles[size].match(/text-(\w+)/)?.[1] === 'sm' ? '14' : sizeStyles[size].match(/text-(\w+)/)?.[1] === 'lg' ? '18' : '16'), 16) }}
-            animate={error ? { x: [0, -4, 4, -4, 4, 0] } : {}}
-            transition={{ duration: 0.4 }}
             {...props}
           />
 
@@ -67,16 +64,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         </div>
 
         {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
             className="flex items-center gap-1 text-sm text-brand-red"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
             {error}
-          </motion.div>
+          </div>
         )}
 
         {helper && !error && (

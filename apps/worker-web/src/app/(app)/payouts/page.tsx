@@ -253,12 +253,36 @@ const PayoutCard = ({ payout, index }: { payout: typeof PAYOUTS_DATA[0]; index: 
   const colors = statusColors[payout.status];
 
   const copyToClipboard = (text: string, isTxnId = false) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    console.log('Copy to clipboard called with:', text.substring(0, 50));
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        console.log('Text copied successfully');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        // Fallback method
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          console.log('Copied using fallback method');
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+          console.error('Fallback copy failed:', err);
+        }
+        document.body.removeChild(textArea);
+      });
+    }
   };
 
   const copyReceipt = () => {
+    console.log('Copy receipt clicked for payout:', payout.id);
     const receiptText = `
 SURAKSHA WEEKLY
 Policy: ${payout.policyNumber}
@@ -283,7 +307,13 @@ Processed:     ${new Date(payout.processedAt!).toLocaleDateString('en-GB', { day
   };
 
   const handlePrint = () => {
+    console.log('Print button clicked');
     window.print();
+  };
+
+  const handleCardClick = () => {
+    console.log('Card clicked, toggling expansion. Current state:', isExpanded);
+    setIsExpanded(!isExpanded);
   };
 
   return (
@@ -297,11 +327,12 @@ Processed:     ${new Date(payout.processedAt!).toLocaleDateString('en-GB', { day
       <Card
         variant="default"
         padding="none"
-        clickable
-        onClick={() => setIsExpanded(!isExpanded)}
         className="overflow-hidden"
       >
-        <div className="flex items-center gap-4 p-4">
+        <div 
+          className="flex items-center gap-4 p-4 cursor-pointer hover:bg-surface-card-hover transition-colors"
+          onClick={handleCardClick}
+        >
           {/* Date circle */}
           <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-full ${colors.circle} text-white flex-shrink-0`}>
             <div className="text-xs font-medium leading-none">{monthAbbr}</div>
@@ -437,11 +468,13 @@ Processed:     ${new Date(payout.processedAt!).toLocaleDateString('en-GB', { day
                       <div className="flex items-center gap-2">
                         <span className="text-text-primary">{payout.transactionId}</span>
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
+                            console.log('Transaction ID copy clicked');
                             copyToClipboard(payout.transactionId!, true);
                           }}
-                          className="text-brand-indigo hover:text-brand-indigo-dark text-xs px-1.5 py-0.5 rounded hover:bg-brand-indigo/10 transition-colors"
+                          className="text-brand-indigo hover:text-brand-indigo-dark text-xs px-1.5 py-0.5 rounded hover:bg-brand-indigo/10 transition-colors cursor-pointer"
                         >
                           {copied ? '✓' : '📋'}
                         </button>
@@ -468,20 +501,24 @@ Processed:     ${new Date(payout.processedAt!).toLocaleDateString('en-GB', { day
                 {/* Action buttons */}
                 <div className="flex gap-2 mt-4">
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      console.log('Copy summary button clicked');
                       copyReceipt();
                     }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-brand-indigo/10 hover:bg-brand-indigo/20 text-brand-indigo rounded-lg transition-colors text-xs font-sans font-medium"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-brand-indigo/10 hover:bg-brand-indigo/20 text-brand-indigo rounded-lg transition-colors text-xs font-sans font-medium cursor-pointer"
                   >
                     {copied ? '✓ Copied!' : '📋 Copy summary'}
                   </button>
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      console.log('Print button clicked');
                       handlePrint();
                     }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-brand-indigo/10 hover:bg-brand-indigo/20 text-brand-indigo rounded-lg transition-colors text-xs font-sans font-medium"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-brand-indigo/10 hover:bg-brand-indigo/20 text-brand-indigo rounded-lg transition-colors text-xs font-sans font-medium cursor-pointer"
                   >
                     🖨 Save receipt
                   </button>
@@ -530,11 +567,11 @@ export default function PayoutsPage() {
         {hasPayouts ? (
           <>
             {/* Summary Strip */}
-            <Card
-              variant="colored"
-              colorScheme="indigo"
-              padding="lg"
-              className="mb-6"
+            <div
+              className="mb-6 rounded-lg p-8 shadow-lg"
+              style={{
+                background: 'linear-gradient(135deg, #1B4FCC 0%, #1440A8 100%)',
+              }}
             >
               <div className="flex items-center justify-between gap-6">
                 {/* Left side */}
@@ -573,7 +610,7 @@ export default function PayoutsPage() {
                   </ResponsiveContainer>
                 </div>
               </div>
-            </Card>
+            </div>
 
             {/* Payout History */}
             <div className="space-y-6">

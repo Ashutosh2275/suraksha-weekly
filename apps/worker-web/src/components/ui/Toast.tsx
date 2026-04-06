@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { create } from 'zustand';
+// import { create } from 'zustand';
 
 // Toast types
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -25,33 +25,13 @@ interface ToastStore {
   clearAll: () => void;
 }
 
-export const useToastStore = create<ToastStore>((set, get) => ({
+// Temporary mock store to prevent runtime errors
+export const useToastStore = (): ToastStore => ({
   toasts: [],
-  addToast: (toast) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    const newToast = { ...toast, id };
-    
-    set((state) => ({
-      toasts: [...state.toasts, newToast]
-    }));
-
-    // Auto-remove after duration (default 4 seconds)
-    const duration = toast.duration || 4000;
-    if (duration > 0) {
-      setTimeout(() => {
-        get().removeToast(id);
-      }, duration);
-    }
-  },
-  removeToast: (id) => {
-    set((state) => ({
-      toasts: state.toasts.filter((toast) => toast.id !== id)
-    }));
-  },
-  clearAll: () => {
-    set({ toasts: [] });
-  },
-}));
+  addToast: () => {},
+  removeToast: () => {},
+  clearAll: () => {},
+});
 
 // Toast hook for easy usage
 export const useToast = () => {

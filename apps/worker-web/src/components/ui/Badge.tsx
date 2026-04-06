@@ -71,6 +71,11 @@ const statusConfig: Record<BadgeStatus, { bg: string; text: string; border: stri
 }
 
 export function Badge({ status, size = 'md', dot = false, className = '' }: BadgeProps) {
+  // Don't render PAID badges
+  if (status === 'PAID') {
+    return null
+  }
+
   const config = statusConfig[status]
   const sizeStyles = {
     sm: 'px-2 py-0.5 text-xs',

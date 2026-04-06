@@ -1,26 +1,32 @@
-import Link from 'next/link';
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function Home() {
-  return (
-    <main className="mx-auto min-h-screen max-w-md bg-slate-50 px-4 py-6">
-      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Suraksha Weekly</p>
-      <h1 className="mt-1 text-2xl font-semibold text-slate-900">Worker Web</h1>
-      <p className="mt-2 text-sm text-slate-600">AI Parametric Income Shield for gig delivery partners.</p>
+  const { isAuthenticated } = useAuth()
+  const router = useRouter()
+  const pathname = usePathname()
 
-      <div className="mt-6 space-y-3">
-        <Link className="block rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white" href="/onboarding">
-          Start Onboarding
-        </Link>
-        <Link className="block rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800" href="/dashboard">
-          Open Dashboard
-        </Link>
-        <Link className="block rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800" href="/claims">
-          View Claims
-        </Link>
-        <Link className="block rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800" href="/payouts">
-          View Payouts
-        </Link>
+  useEffect(() => {
+    // Only redirect if we're on the root path to prevent infinite loops
+    if (pathname === '/') {
+      if (isAuthenticated) {
+        router.replace('/dashboard')
+      } else {
+        router.replace('/auth')
+      }
+    }
+  }, [isAuthenticated, router, pathname])
+
+  // Show loading spinner 
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+        <p className="mt-2 text-sm text-gray-600">Loading...</p>
       </div>
-    </main>
-  );
+    </div>
+  )
 }
