@@ -105,3 +105,29 @@ PHASE2_CHECKLIST.md
 PHASE2_COMPLETE.md
 PHASE2_VERIFICATION.md
 DEMO_CHECKLIST_PHASE1.md
+
+# ── Generated Project Docs ────────────────────────────────────
+AUTONOMOUS_*.md
+*_CHECKPOINT.md
+*_COMPLETE.md
+*_DOCS.md
+*_QUICK_REF.md
+*_REPORT.md
+*_SUMMARY.md
+*_GUIDE.md
+*_DELIVERY_SUMMARY.md
+*_IMPLEMENTATION.md
+*_README.md
+*_SETUP.md
+*_INDEX.md
+
+# ── Generated Helper Scripts ─────────────────────────────────
+create-*.js
+setup-*.js
+run-*.bat
+cleanup.*
+*new.tsx
+ml-models-page.tsx
+payouts-new.tsx
+test.tsx
+start-dev.bat
