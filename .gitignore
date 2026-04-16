@@ -79,6 +79,7 @@ desktop.ini
 # Test/load results
 tests/load/results/*.json
 tests/load/results/*.html
+tests/load/results/*.xml
 
 # Temporary files
 *.tmp
