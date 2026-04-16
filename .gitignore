@@ -1,8 +1,4 @@
-# ============================================================
-# SURAKSHA WEEKLY — PRODUCTION .gitignore
-# ============================================================
-
-# ── Python ───────────────────────────────────────────────────
+# Python
 __pycache__/
 *.py[cod]
 *.pyo
@@ -20,8 +16,6 @@ ENV/
 dist/
 build/
 *.egg
-pip-log.txt
-pip-delete-this-directory.txt
 .tox/
 .coverage
 .coverage.*
@@ -31,13 +25,13 @@ coverage.xml
 nosetests.xml
 pytest.xml
 
-# ── ML Models ────────────────────────────────────────────────
+# ML model artifacts
 services/api/ml/models/*.pkl
 services/api/ml/models/*.joblib
 *.pkl
 *.joblib
 
-# ── Node / Next.js ───────────────────────────────────────────
+# Node / Next.js
 node_modules/
 .next/
 out/
@@ -50,19 +44,19 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# ── Environment Files (CRITICAL) ─────────────────────────────
+# Environment files
 .env
 .env.*
 !.env.example
 !.env.demo
 
-# ── Logs ─────────────────────────────────────────────────────
+# Logs
 *.log
 
-# ── Docker ───────────────────────────────────────────────────
+# Docker
 docker-compose.override.yml
 
-# ── OS Files ─────────────────────────────────────────────────
+# OS files
 .DS_Store
 .DS_Store?
 ._*
@@ -72,7 +66,7 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
-# ── IDE / Editor ─────────────────────────────────────────────
+# IDE / editor
 .vscode/
 .idea/
 *.swp
@@ -82,52 +76,12 @@ desktop.ini
 *.njsproj
 *.sln
 
-# ── Test Results ─────────────────────────────────────────────
+# Test/load results
 tests/load/results/*.json
 tests/load/results/*.html
-*.xml
 
-# ── Temporary Files ──────────────────────────────────────────
+# Temporary files
 *.tmp
 *.temp
 *.bak
 *.orig
-
-# ── Competition / Internal Docs ──────────────────────────────
-DEVTrails_2026_Rulebook.pdf
-DEVTrails_2026_Usecase_Document.pdf
-Suraksha_Weekly_DEVTrails2026.pptx
-extracted_content.txt
-structure.txt
-
-PHASE1_SUBMISSION_STATUS.md
-PHASE2_CHECKLIST.md
-PHASE2_COMPLETE.md
-PHASE2_VERIFICATION.md
-DEMO_CHECKLIST_PHASE1.md
-
-# ── Generated Project Docs ────────────────────────────────────
-AUTONOMOUS_*.md
-*_CHECKPOINT.md
-*_COMPLETE.md
-*_DOCS.md
-*_QUICK_REF.md
-*_REPORT.md
-*_SUMMARY.md
-*_GUIDE.md
-*_DELIVERY_SUMMARY.md
-*_IMPLEMENTATION.md
-*_README.md
-*_SETUP.md
-*_INDEX.md
-
-# ── Generated Helper Scripts ─────────────────────────────────
-create-*.js
-setup-*.js
-run-*.bat
-cleanup.*
-*new.tsx
-ml-models-page.tsx
-payouts-new.tsx
-test.tsx
-start-dev.bat
