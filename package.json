@@ -8,24 +8,29 @@
     "npm": ">=10.0.0"
   },
   "workspaces": [
-    "apps/worker-web",
-    "apps/admin-web",
-    "packages/shared-types",
-    "packages/db-schema"
+    "apps/*",
+    "packages/*",
+    "shared/*"
   ],
   "scripts": {
-    "install:all": "npm install && npm install --workspaces",
-    "dev": "concurrently \"npm run dev -w apps/worker-web\" \"npm run dev -w apps/admin-web\"",
-    "dev:worker": "npm run dev -w apps/worker-web",
-    "dev:admin": "npm run dev -w apps/admin-web",
-    "dev:all": "concurrently \"npm run dev:worker\" \"npm run dev:admin\" \"npm run dev:services\"",
-    "dev:services": "echo 'Start FastAPI services manually or use docker-compose'",
+    "dev": "concurrently \"npm run dev -w apps/worker\" \"npm run dev -w apps/admin\"",
+    "dev:worker": "npm run dev -w apps/worker",
+    "dev:admin": "npm run dev -w apps/admin",
+    "dev:landing": "npm run dev -w apps/landing",
+    "dev:all": "concurrently \"npm run dev:worker\" \"npm run dev:admin\" \"npm run dev:landing\"",
     "build": "npm run build --workspaces --if-present",
-    "build:worker": "npm run build -w apps/worker-web",
-    "build:admin": "npm run build -w apps/admin-web",
+    "build:worker": "npm run build -w apps/worker",
+    "build:admin": "npm run build -w apps/admin",
+    "build:landing": "npm run build -w apps/landing",
+    "export": "npm run export --workspaces --if-present",
+    "export:worker": "cd apps/worker && npm run build",
+    "export:admin": "cd apps/admin && npm run build",
+    "export:landing": "cd apps/landing && npm run build",
+    "deploy:preview": "npm run build && echo 'Static builds ready for deployment'",
     "lint": "npm run lint --workspaces --if-present",
     "type-check": "npm run type-check --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
+    "clean:builds": "rm -rf apps/*/out apps/*/.next",
     "prisma:generate": "npm run prisma:generate -w packages/db-schema",
     "prisma:migrate": "npm run prisma:migrate -w packages/db-schema",
     "docker:build": "docker compose -f infra/docker/docker-compose.yml build",
@@ -40,7 +45,24 @@
     "load:all": "npm run load:baseline && npm run load:peak && npm run load:fraud",
     "load:ci": "npm run load:baseline && npm run load:fraud"
   },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "next": "^14.2.35",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^0.344.0",
+    "recharts": "^2.12.7"
+  },
   "devDependencies": {
+    "@types/node": "^20.19.37",
+    "@types/react": "^18.3.1",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.6.3",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^16.2.2",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3",
     "concurrently": "^8.2.2"
   }
 }

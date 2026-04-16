@@ -1,0 +1,40 @@
+# Netlify Configuration for Landing Page
+# Deploy to: suraksha-weekly.netlify.com
+
+[build]
+  base = "/"
+  publish = "apps/landing/out"
+  command = "npm run build:landing"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NEXT_PUBLIC_DEMO_MODE = "true"
+  NEXT_PUBLIC_MOCK_MODE = "true"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
