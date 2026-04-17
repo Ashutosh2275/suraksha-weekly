@@ -1,6 +1,12 @@
 const fs = require('fs');
 const { execSync } = require('child_process');
 
+console.log('Installing worker dependencies...');
+execSync('npm install --no-audit --no-fund', { cwd: 'apps/web', stdio: 'inherit' });
+
+console.log('Installing admin dependencies...');
+execSync('npm install --no-audit --no-fund', { cwd: 'apps/admin', stdio: 'inherit' });
+
 console.log('Building Worker App...');
 execSync('npm run build', { cwd: 'apps/web', stdio: 'inherit' });
 
