@@ -18,6 +18,7 @@ fs.rmSync('dist', { recursive: true, force: true });
 fs.mkdirSync('dist', { recursive: true });
 
 fs.cpSync('apps/web/out', 'dist', { recursive: true });
-fs.cpSync('apps/admin/out', 'dist', { recursive: true });
+fs.mkdirSync('dist/admin', { recursive: true });
+fs.cpSync('apps/admin/out', 'dist/admin', { recursive: true });
 
 console.log('Combined build ready in /dist');
