@@ -21,4 +21,8 @@ fs.cpSync('apps/web/out', 'dist', { recursive: true });
 fs.mkdirSync('dist/admin', { recursive: true });
 fs.cpSync('apps/admin/out', 'dist/admin', { recursive: true });
 
+if (fs.existsSync('dist/admin/index.html')) {
+	fs.copyFileSync('dist/admin/index.html', 'dist/admin.html');
+}
+
 console.log('Combined build ready in /dist');
